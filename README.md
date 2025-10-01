@@ -79,28 +79,34 @@ flashflow --version
 ## 📖 Documentation
 
 ### Getting Started
-1. [Introduction to FlashFlow](docs/introduction.md)
-2. [Installation Guide](docs/installation.md)
-3. [Quick Start Tutorial](docs/quick-start.md)
-4. [Understanding .flow Files](docs/flow-files.md)
+1. [Introduction to FlashFlow](docs/index.md)
+2. [Installation Guide](docs/SYSTEM_WIDE_INSTALLATION.md)
+3. [Quick Start Tutorial](docs/STEP_BY_STEP_GUIDE.md)
+4. [Understanding .flow Files](docs/FLASHFLOW_QUICK_REFERENCE.md)
 
 ### Core Concepts
-- [Models](docs/models.md) - Define your data structures
-- [Pages](docs/pages.md) - Create user interfaces
-- [Endpoints](docs/endpoints.md) - Build APIs automatically
-- [Themes](docs/themes.md) - Customize the look and feel
+- [Models](docs/DEVELOPER_GUIDE.md) - Define your data structures
+- [Pages](docs/DEVELOPER_GUIDE.md) - Create user interfaces
+- [Endpoints](docs/API_REFERENCE.md) - Build APIs automatically
+- [Themes](docs/DEVELOPER_GUIDE.md) - Customize the look and feel
 
 ### Platform Guides
-- [Web Applications](docs/web.md) - Build responsive web apps with React
-- [Mobile Applications](docs/mobile.md) - Create iOS and Android apps with Flet
-- [Desktop Applications](docs/desktop.md) - Build cross-platform desktop apps
-- [Backend Services](docs/backend.md) - Generate Laravel APIs and databases
+- [Web Applications](docs/DEVELOPER_GUIDE.md) - Build responsive web apps with React
+- [Mobile Applications](docs/DEVELOPER_GUIDE.md) - Create iOS and Android apps with Flet
+- [Desktop Applications](docs/DEVELOPER_GUIDE.md) - Build cross-platform desktop apps
+- [Backend Services](docs/DEVELOPER_GUIDE.md) - Generate Laravel APIs and databases
 
 ### Advanced Features
-- [SEO Optimization](docs/seo.md) - Improve search engine visibility
-- [Internationalization](docs/i18n.md) - Support multiple languages
-- [Payments Integration](docs/payments.md) - Add payment processing
-- [Deployment Options](docs/deployment.md) - Deploy to various environments
+- [SEO Optimization](docs/FLASHFLOW_SEO_GUIDE.md) - Improve search engine visibility
+- [Internationalization](docs/DEVELOPER_GUIDE.md) - Support multiple languages
+- [Payments Integration](docs/DEVELOPER_GUIDE.md) - Add payment processing
+- [Deployment Options](docs/DEPLOYMENT_GUIDE.md) - Deploy to various environments
+
+### Specialized Guides
+- [Building an Uber-like App](docs/UBER_LIKE_APP_GUIDE.md)
+- [GitHub Integration](docs/github-integration.md)
+- [FranklinPHP Deployment](docs/FRANKLINPHP_DEPLOYMENT_GUIDE.md)
+- [Team Management](docs/TEAM_MANAGEMENT.md)
 
 ## 🚀 Example
 
