@@ -4,6 +4,7 @@ Frontend Generator - Generates React/PWA frontend code
 
 import os
 import json
+import re
 from pathlib import Path
 from typing import Dict, Any
 from jinja2 import Template
@@ -12,67 +13,67 @@ from ..core import FlashFlowProject, FlashFlowIR
 
 class FrontendGenerator:
     """Generates frontend code from FlashFlow IR"""
-    
+
     def __init__(self, project: FlashFlowProject, ir: FlashFlowIR, env: str = 'development'):
         self.project = project
         self.ir = ir
         self.env = env
         self.frontend_path = project.dist_path / "frontend"
-    
+
     def generate(self):
         """Generate complete frontend"""
-        
+
         # Create frontend directory structure
         self._create_directory_structure()
-        
+
         # Generate package.json and configs
         self._generate_package_config()
-        
+
         # Generate main app files
         self._generate_app_files()
-        
+
         # Generate components
         self._generate_components()
-        
+
         # Generate social auth components if configured
         if hasattr(self.ir, 'social_auth'):
             self._generate_social_auth_components()
-            
+
         # Generate file storage components if configured
         if hasattr(self.ir, 'file_storage'):
             self._generate_file_storage_components()
-            
+
         # Generate admin panel components if configured
         if hasattr(self.ir, 'admin_panel'):
             self._generate_admin_panel_components()
-            
+
         # Generate smart form components if configured
         if hasattr(self.ir, 'smart_forms'):
             self._generate_smart_form_components()
-            
+
         # Generate i18n components if configured
         if hasattr(self.ir, 'i18n'):
             self._generate_i18n_components()
-            
+
         # Generate serverless components if configured
         if hasattr(self.ir, 'serverless'):
             self._generate_serverless_components()
-            
+
         # Generate UX helper components
         self._generate_ux_helper_components()
-        
+
         # Generate pages
         self._generate_pages()
-        
+
         # Generate PWA configuration
         self._generate_pwa_config()
-        
+
         # Generate build configuration
         self._generate_build_config()
-    
+
     def _create_directory_structure(self):
         """Create frontend directory structure"""
-        
+
         dirs = [
             self.frontend_path,
             self.frontend_path / "src",
@@ -85,13 +86,13 @@ class FrontendGenerator:
             self.frontend_path / "public",
             self.frontend_path / "dist"
         ]
-        
+
         for dir_path in dirs:
             dir_path.mkdir(parents=True, exist_ok=True)
-    
+
     def _generate_package_config(self):
         """Generate package.json and related configs"""
-        
+
         package_json = {
             "name": f"{self.project.config.name}-frontend",
             "version": "0.1.0",
@@ -106,7 +107,10 @@ class FrontendGenerator:
                 "react": "^18.2.0",
                 "react-dom": "^18.2.0",
                 "react-router-dom": "^6.8.0",
-                "axios": "^1.3.0"
+                "axios": "^1.3.0",
+                "@material-ui/icons": "^4.11.3",  # Add Material Icons
+                "@fortawesome/fontawesome-free": "^6.4.0",  # Add Font Awesome
+                "bootstrap-icons": "^1.10.0"  # Add Bootstrap Icons
             },
             "devDependencies": {
                 "@types/react": "^18.0.0",
@@ -117,13 +121,13 @@ class FrontendGenerator:
                 "vite-plugin-pwa": "^0.14.0"
             }
         }
-        
-        with open(self.frontend_path / "package.json", 'w') as f:
+
+        with open(self.frontend_path / "package.json", 'w', encoding='utf-8') as f:
             json.dump(package_json, f, indent=2)
-    
+
     def _generate_app_files(self):
         """Generate main application files"""
-        
+
         # index.html
         index_html = Template("""<!DOCTYPE html>
 <html lang="en">
@@ -132,18 +136,23 @@ class FrontendGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ project_name }}</title>
     <meta name="description" content="{{ project_description }}" />
-    
+
+    <!-- Icon packs CSS -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />
-    
+
     <!-- PWA icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-    
+
     <!-- Theme -->
     <meta name="theme-color" content="{{ theme_color }}" />
-    
+
     <style>
         body {
             margin: 0;
@@ -174,10 +183,10 @@ class FrontendGenerator:
             project_description=self.project.config.description,
             theme_color=self.ir.theme.get('colors', {}).get('primary', '#3B82F6')
         )
-        
-        with open(self.frontend_path / "index.html", 'w') as f:
+
+        with open(self.frontend_path / "index.html", 'w', encoding='utf-8') as f:
             f.write(index_html)
-        
+
         # main.tsx
         main_tsx = """import React from 'react'
 import ReactDOM from 'react-dom/client'
@@ -190,10 +199,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 """
-        
-        with open(self.frontend_path / "src" / "main.tsx", 'w') as f:
+
+        with open(self.frontend_path / "src" / "main.tsx", 'w', encoding='utf-8') as f:
             f.write(main_tsx)
-        
+
         # App.tsx
         app_tsx = Template("""import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
@@ -225,21 +234,37 @@ export default App
                 for path, data in self.ir.pages.items()
             }
         )
-        
-        with open(self.frontend_path / "src" / "App.tsx", 'w') as f:
+
+        with open(self.frontend_path / "src" / "App.tsx", 'w', encoding='utf-8') as f:
             f.write(app_tsx)
-        
+
+        # Copy icon utility
+        self._copy_icon_utils()
+
         # Global CSS
         self._generate_global_styles()
-    
+
+    def _copy_icon_utils(self):
+        """Copy icon utility to the generated project"""
+        import shutil
+        template_path = Path(__file__).parent.parent / "templates" / "icon_utils.js"
+        target_path = self.frontend_path / "src" / "utils" / "iconUtils.js"
+
+        # Create utils directory if it doesn't exist
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy the file
+        if template_path.exists():
+            shutil.copy(template_path, target_path)
+
     def _generate_global_styles(self):
         """Generate global CSS styles"""
-        
+
         # Extract theme colors
         colors = self.ir.theme.get('colors', {})
         primary = colors.get('primary', '#3B82F6')
         secondary = colors.get('secondary', '#64748B')
-        
+
         css_content = f"""/* FlashFlow Generated Styles */
 
 :root {{
@@ -347,17 +372,17 @@ body {{
   .container {{
     padding: 0 0.5rem;
   }}
-  
+
   .btn {{
     width: 100%;
     text-align: center;
   }}
 }}
 """
-        
-        with open(self.frontend_path / "src" / "styles" / "index.css", 'w') as f:
+
+        with open(self.frontend_path / "src" / "styles" / "index.css", 'w', encoding='utf-8') as f:
             f.write(css_content)
-        
+
         # App-specific CSS
         app_css = """.app {
   min-height: 100vh;
@@ -392,21 +417,21 @@ body {{
   color: var(--secondary-color);
 }
 """
-        
-        with open(self.frontend_path / "src" / "styles" / "App.css", 'w') as f:
+
+        with open(self.frontend_path / "src" / "styles" / "App.css", 'w', encoding='utf-8') as f:
             f.write(app_css)
-    
+
     def _generate_pages(self):
         """Generate page components"""
-        
+
         for page_path, page_data in self.ir.pages.items():
             self._generate_single_page(page_path, page_data)
-    
+
     def _generate_single_page(self, page_path: str, page_data: Dict):
         """Generate a single page component"""
-        
+
         component_name = self._path_to_component_name(page_path, page_data)
-        
+
         template = Template("""import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
@@ -415,6 +440,8 @@ interface {{ component_name }}Props {}
 const {{ component_name }}: React.FC<{{ component_name }}Props> = () => {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
+  const [formData, setFormData] = useState<any>({})
+  const [selectedItem, setSelectedItem] = useState<any>(null)
 
   useEffect(() => {
     // Load initial data if needed
@@ -434,6 +461,70 @@ const {{ component_name }}: React.FC<{{ component_name }}Props> = () => {
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // TODO: Submit form data to API
+      // await axios.post('/api/data', formData);
+      // Reset form and reload data
+      setFormData({});
+      loadData();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form
+    setFormData({});
+    // Navigate back or to list view
+    window.history.back();
+  };
+
+  const editItem = (id: string) => {
+    // Find item and populate form
+    const item = data.find(d => d.id === id);
+    if (item) {
+      setFormData(item);
+      // Navigate to edit page
+      // This would typically be handled by routing
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      setLoading(true);
+      try {
+        // TODO: Delete item via API
+        // await axios.delete(`/api/data/${id}`);
+        // Reload data
+        loadData();
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const createItem = () => {
+    // Clear form for new item
+    setFormData({});
+    // Navigate to create page
+    // This would typically be handled by routing
+  };
+
   if (loading) {
     return <div className="loading">Loading...</div>
   }
@@ -446,11 +537,11 @@ const {{ component_name }}: React.FC<{{ component_name }}Props> = () => {
         </div>
       </div>
       {% endif %}
-      
+
       <div className="container">
         {% for component in components %}{{ component }}
         {% endfor %}
-        
+
         {/* Auto-generated content based on .flow file */}
         <div className="page-content">
           <p>This page is generated from your .flow file.</p>
@@ -463,32 +554,32 @@ const {{ component_name }}: React.FC<{{ component_name }}Props> = () => {
 
 export default {{ component_name }}
 """)
-        
+
         # Process page components
         components = []
         body = page_data.get('body', [])
-        
+
         for component_def in body:
             if isinstance(component_def, dict):
                 component_jsx = self._generate_component_jsx(component_def)
                 components.append(component_jsx)
-        
+
         page_content = template.render(
             component_name=component_name,
             page_title=page_data.get('title', ''),
             page_slug=page_path.strip('/').replace('/', '-') or 'home',
             components=components
         )
-        
+
         page_file = self.frontend_path / "src" / "pages" / f"{component_name}.tsx"
-        with open(page_file, 'w') as f:
+        with open(page_file, 'w', encoding='utf-8') as f:
             f.write(page_content)
-    
+
     def _generate_component_jsx(self, component_def: Dict) -> str:
         """Generate JSX for a component definition"""
-        
+
         component_type = component_def.get('component', 'div')
-        
+
         if component_type == 'hero':
             return f'''<div className="hero">
           <h1>{component_def.get('title', 'Welcome')}</h1>
@@ -497,46 +588,138 @@ export default {{ component_name }}
             {component_def.get('cta', {}).get('text', 'Get Started')}
           </a>
         </div>'''
-        
-        elif component_type == 'form':
+
+        if component_type == 'form':
+            data_source = component_def.get('data_source', 'data')
             fields = component_def.get('fields', [])
             field_inputs = []
             for field in fields:
-                field_name = field.get('name', 'field')
-                field_type = field.get('type', 'text')
-                placeholder = field.get('placeholder', '')
+                field_name = field
+                field_type = 'text'  # Default type
+                placeholder = field.replace('_', ' ').title()
                 field_inputs.append(f'''<div className="form-group">
-            <input 
-              type="{field_type}" 
-              name="{field_name}" 
+            <label htmlFor="{field_name}">{field_name.replace('_', ' ').title()}</label>
+            <input
+              type="{field_type}"
+              id="{field_name}"
+              name="{field_name}"
               placeholder="{placeholder}"
               className="form-control"
+              value={{formData.{field_name} || ''}}
+              onChange={{handleInputChange}}
             />
           </div>''')
-            
-            return f'''<form className="form">
-          {"".join(field_inputs)}
-          <button type="submit" className="btn">
-            {component_def.get('button_text', 'Submit')}
-          </button>
-        </form>'''
-        
-        elif component_type == 'list':
-            return '''<div className="list">
-          {data.map((item, index) => (
-            <div key={index} className="list-item">
-              {/* List item template will be rendered here */}
-              <p>{JSON.stringify(item)}</p>
+
+            return f'''<div className="form-container">
+          <div className="card">
+            <div className="card-header">
+              <h3>{component_def.get('submit_text', 'Submit Form')}</h3>
             </div>
-          ))}
+            <div className="card-body">
+              <form onSubmit={{handleSubmit}}>
+                {"".join(field_inputs)}
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">
+                    {component_def.get('submit_text', 'Submit')}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={{handleCancel}}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>'''
-        
-        else:
-            return f'<div className="component-{component_type}">Component: {component_type}</div>'
-    
+
+        if component_type == 'list':
+            data_source = component_def.get('data_source', 'data')
+            fields = component_def.get('fields', [])
+            actions = component_def.get('actions', [])
+            
+            # Generate table headers
+            headers = ''.join([f'<th>{field.replace("_", " ").title()}</th>' for field in fields])
+            
+            # Generate table cells
+            cells = ''.join([f'<td>{{item.{field}}}</td>' for field in fields])
+            
+            # Generate action buttons
+            action_buttons = ''
+            if 'edit' in actions:
+                action_buttons += '<button onClick={() => editItem(item.id)} className="btn btn-secondary btn-sm mr-2">Edit</button>'
+            if 'delete' in actions:
+                action_buttons += '<button onClick={() => deleteItem(item.id)} className="btn btn-danger btn-sm">Delete</button>'
+            if 'create' in actions:
+                action_buttons += '<button onClick={() => createItem()} className="btn btn-primary btn-sm">Create</button>'
+            
+            action_header = '<th>Actions</th>' if action_buttons else ''
+            action_cell = f'<td>{action_buttons}</td>' if action_buttons else ''
+            
+            return f'''<div className="list">
+          <div className="card">
+            <div className="card-header">
+              <h3>{data_source} List</h3>
+            </div>
+            <div className="card-body">
+              <div className="mb-3">
+                <button onClick={{createItem}} className="btn btn-primary">Create New {data_source}</button>
+              </div>
+              <div className="table-responsive">
+                <table className="table table-striped">
+                  <thead>
+                    <tr>
+                      {headers}
+                      {action_header}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{data.map((item, index) => (
+                      <tr key={{item.id || index}}>
+                        {cells}
+                        {action_cell}
+                      </tr>
+                    ))}}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>'''
+
+        if component_type == 'card':
+            data_source = component_def.get('data_source', 'data')
+            fields = component_def.get('fields', [])
+            actions = component_def.get('actions', [])
+            
+            # Generate field display
+            field_display = ''.join([f'<div className="field">' +
+              f'<label>{field.replace("_", " ").title()}:</label>' +
+              f'<span>{{data.{field}}}</span>' +
+            '</div>' for field in fields])
+            
+            # Generate action buttons
+            action_buttons = ''
+            if 'edit' in actions:
+                action_buttons += '<button onClick={() => editItem(data.id)} className="btn btn-secondary">Edit</button>'
+            if 'delete' in actions:
+                action_buttons += '<button onClick={() => deleteItem(data.id)} className="btn btn-danger">Delete</button>'
+            
+            return f'''<div className="card">
+          <div className="card-header">
+            <h3>{data_source} Details</h3>
+          </div>
+          <div className="card-body">
+            {field_display}
+          </div>
+          <div className="card-footer">
+            {action_buttons}
+          </div>
+        </div>'''
+
+        return f'<div className="component-{component_type}">Component: {component_type}</div>'
+
     def _generate_components(self):
         """Generate reusable components"""
-        
+
         # Generate API service
         api_service = Template("""import axios from 'axios'
 
@@ -576,10 +759,10 @@ export const {{ model_name.lower() }}Api = {
 
 export default api
 """).render(models=list(self.ir.models.keys()))
-        
-        with open(self.frontend_path / "src" / "services" / "api.ts", 'w') as f:
+
+        with open(self.frontend_path / "src" / "services" / "api.ts", 'w', encoding='utf-8') as f:
             f.write(api_service)
-        
+
         # Generate common hooks
         hooks_content = """import { useState, useEffect } from 'react'
 import api from '../services/api'
@@ -630,13 +813,13 @@ export const useLocalStorage = (key: string, initialValue: any) => {
   return [storedValue, setValue]
 }
 """
-        
-        with open(self.frontend_path / "src" / "hooks" / "useApi.ts", 'w') as f:
+
+        with open(self.frontend_path / "src" / "hooks" / "useApi.ts", 'w', encoding='utf-8') as f:
             f.write(hooks_content)
-    
+
     def _generate_pwa_config(self):
         """Generate PWA configuration"""
-        
+
         # Manifest
         manifest = {
             "name": self.project.config.name,
@@ -653,20 +836,20 @@ export const useLocalStorage = (key: string, initialValue: any) => {
                     "type": "image/png"
                 },
                 {
-                    "src": "/icons/icon-512x512.png", 
+                    "src": "/icons/icon-512x512.png",
                     "sizes": "512x512",
                     "type": "image/png"
                 }
             ]
         }
-        
-        with open(self.frontend_path / "public" / "manifest.json", 'w') as f:
+
+        with open(self.frontend_path / "public" / "manifest.json", 'w', encoding='utf-8') as f:
             json.dump(manifest, f, indent=2)
-        
+
         # Create placeholder icons directory
         icons_dir = self.frontend_path / "public" / "icons"
         icons_dir.mkdir(exist_ok=True)
-        
+
         # Service worker (basic)
         sw_content = """// FlashFlow Service Worker
 const CACHE_NAME = 'flashflow-v1'
@@ -692,13 +875,13 @@ self.addEventListener('fetch', (event) => {
   )
 })
 """
-        
-        with open(self.frontend_path / "public" / "sw.js", 'w') as f:
+
+        with open(self.frontend_path / "public" / "sw.js", 'w', encoding='utf-8') as f:
             f.write(sw_content)
-    
+
     def _generate_build_config(self):
         """Generate Vite build configuration"""
-        
+
         vite_config = """import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -741,10 +924,10 @@ export default defineConfig({
   }
 })
 """
-        
-        with open(self.frontend_path / "vite.config.ts", 'w') as f:
+
+        with open(self.frontend_path / "vite.config.ts", 'w', encoding='utf-8') as f:
             f.write(vite_config)
-        
+
         # TypeScript config
         ts_config = {
             "compilerOptions": {
@@ -767,13 +950,13 @@ export default defineConfig({
             "include": ["src"],
             "references": [{"path": "./tsconfig.node.json"}]
         }
-        
-        with open(self.frontend_path / "tsconfig.json", 'w') as f:
+
+        with open(self.frontend_path / "tsconfig.json", 'w', encoding='utf-8') as f:
             json.dump(ts_config, f, indent=2)
-    
+
     def _path_to_component_name(self, path: str, page_data: Dict) -> str:
         """Convert page path to React component name"""
-        
+
         # Use title if available
         if 'title' in page_data:
             title = page_data['title']
@@ -781,36 +964,50 @@ export default defineConfig({
             title = title.replace(' - ' + self.project.config.name, '')
             # Convert to PascalCase
             words = title.replace('-', ' ').replace('_', ' ').split()
-            return ''.join(word.capitalize() for word in words if word)
-        
+            # Sanitize words to remove special characters that could cause issues
+            sanitized_words = []
+            for word in words:
+                # Keep only alphanumeric characters
+                clean_word = ''.join(c for c in word if c.isalnum())
+                if clean_word:
+                    sanitized_words.append(clean_word)
+            return ''.join(word.capitalize() for word in sanitized_words if word)
+
         # Convert path to component name
         if path == '/':
             return 'HomePage'
-        
+
         # Remove leading slash and convert to PascalCase
         path_parts = path.strip('/').split('/')
-        component_name = ''.join(part.capitalize() for part in path_parts)
-        
+        # Sanitize path parts
+        sanitized_parts = []
+        for part in path_parts:
+            # Keep only alphanumeric characters
+            clean_part = ''.join(c for c in part if c.isalnum())
+            if clean_part:
+                sanitized_parts.append(clean_part)
+        component_name = ''.join(part.capitalize() for part in sanitized_parts)
+
         if not component_name.endswith('Page'):
             component_name += 'Page'
-        
+
         return component_name
-    
+
     def _generate_social_auth_components(self):
         """Generate social authentication React components"""
-        
+
         # Generate social login buttons component
         self._generate_social_buttons_component()
-        
+
         # Generate enhanced login page with social options
         self._generate_enhanced_auth_pages()
-        
+
         # Generate social auth service
         self._generate_social_auth_service()
-    
+
     def _generate_social_buttons_component(self):
         """Generate SocialButtons React component"""
-        
+
         template = Template("""import React, { useState, useEffect } from 'react';
 import './SocialButtons.css';
 
@@ -831,12 +1028,12 @@ const SocialButtons = ({ providers = [], layout = 'stack', onSuccess, onError })
 
   const handleSocialLogin = async (provider) => {
     setLoading({ ...loading, [provider]: true });
-    
+
     try {
       // Get auth URL from backend
       const response = await fetch(`/api/auth/${provider}`);
       const data = await response.json();
-      
+
       if (data.auth_url) {
         // Open popup window for OAuth
         const popup = window.open(
@@ -844,19 +1041,19 @@ const SocialButtons = ({ providers = [], layout = 'stack', onSuccess, onError })
           'social-auth',
           'width=500,height=600,scrollbars=yes,resizable=yes'
         );
-        
+
         // Listen for popup completion
         const checkClosed = setInterval(() => {
           if (popup.closed) {
             clearInterval(checkClosed);
             setLoading({ ...loading, [provider]: false });
-            
+
             // Check for auth result in localStorage (set by callback page)
             const authResult = localStorage.getItem('social_auth_result');
             if (authResult) {
               const result = JSON.parse(authResult);
               localStorage.removeItem('social_auth_result');
-              
+
               if (result.success) {
                 onSuccess?.(result);
               } else {
@@ -934,16 +1131,16 @@ const SocialButtons = ({ providers = [], layout = 'stack', onSuccess, onError })
 
 export default SocialButtons;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         components_dir.mkdir(parents=True, exist_ok=True)
-        
+
         component_file = components_dir / "SocialButtons.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for social buttons
         css_template = Template(""".social-buttons {
   display: flex;
@@ -1018,16 +1215,16 @@ export default SocialButtons;
   background-color: #24292e !important;
 }
 """)
-        
+
         css_content = css_template.render()
-        
+
         css_file = components_dir / "SocialButtons.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_enhanced_auth_pages(self):
         """Generate enhanced authentication pages with social login"""
-        
+
         # Enhanced Login page
         login_template = Template("""import React, { useState } from 'react';
 import SocialButtons from '../components/SocialButtons';
@@ -1042,16 +1239,16 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
         window.location.href = '/dashboard';
@@ -1078,9 +1275,9 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <h1>Welcome Back</h1>
-        
+
         {error && <div className="error-message">{error}</div>}
-        
+
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
@@ -1093,7 +1290,7 @@ const Login = () => {
               required
             />
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -1105,23 +1302,23 @@ const Login = () => {
               required
             />
           </div>
-          
+
           <button type="submit" disabled={loading} className="login-button">
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-        
+
         <div className="divider">
           <span>or continue with</span>
         </div>
-        
+
         <SocialButtons
           providers={['google', 'facebook', 'twitter', 'github']}
           layout="grid"
           onSuccess={handleSocialSuccess}
           onError={handleSocialError}
         />
-        
+
         <div className="auth-links">
           <a href="/password-reset">Forgot your password?</a>
           <a href="/register">Don't have an account? Sign up</a>
@@ -1133,19 +1330,19 @@ const Login = () => {
 
 export default Login;
 """)
-        
+
         login_content = login_template.render()
-        
+
         pages_dir = self.frontend_path / "src" / "pages"
         pages_dir.mkdir(parents=True, exist_ok=True)
-        
+
         login_file = pages_dir / "Login.jsx"
-        with open(login_file, 'w') as f:
+        with open(login_file, 'w', encoding='utf-8') as f:
             f.write(login_content)
-    
+
     def _generate_social_auth_service(self):
         """Generate social authentication service"""
-        
+
         template = Template("""class SocialAuthService {
   constructor() {
     this.baseURL = '/api';
@@ -1164,7 +1361,7 @@ export default Login;
     try {
       const response = await fetch(`${this.baseURL}/auth/${provider}`);
       const data = await response.json();
-      
+
       if (data.auth_url) {
         return data.auth_url;
       } else {
@@ -1186,13 +1383,13 @@ export default Login;
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
-          
+
           // Check for auth result
           const result = localStorage.getItem('social_auth_result');
           if (result) {
             const parsedResult = JSON.parse(result);
             localStorage.removeItem('social_auth_result');
-            
+
             if (parsedResult.success) {
               resolve(parsedResult);
             } else {
@@ -1237,36 +1434,48 @@ export default Login;
 
 export default new SocialAuthService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         services_dir.mkdir(parents=True, exist_ok=True)
-        
+
         service_file = services_dir / "socialAuth.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_push_notification_components(self):
         """Generate push notification React components"""
-        
+
         # Generate push notification service
         self._generate_push_notification_service()
-        
+
         # Generate notification permission component
         self._generate_notification_permission_component()
-        
+
         # Generate notification settings component
         self._generate_notification_settings_component()
-        
+
         # Generate notification compose component
         self._generate_notification_compose_component()
-    
+
+    def _generate_notification_permission_component(self):
+        """Generate notification permission component"""
+        # TODO: Implement notification permission component
+
+    def _generate_notification_settings_component(self):
+        """Generate notification settings component"""
+        # TODO: Implement notification settings component
+
+    def _generate_notification_compose_component(self):
+        """Generate notification compose component"""
+        # TODO: Implement notification compose component
+
     def _generate_push_notification_service(self):
         """Generate push notification service"""
-        
+
         template = Template("""class PushNotificationService {
   constructor() {
     this.baseURL = '/api';
@@ -1315,7 +1524,7 @@ export default new SocialAuthService();
 
       // Register token with backend
       await this.registerToken(subscription);
-      
+
       return subscription;
     } catch (error) {
       console.error('Push subscription failed:', error);
@@ -1342,7 +1551,7 @@ export default new SocialAuthService();
 
   async registerToken(subscription) {
     const token = JSON.stringify(subscription);
-    
+
     try {
       const response = await fetch(`${this.baseURL}/notifications/register-token`, {
         method: 'POST',
@@ -1374,7 +1583,7 @@ export default new SocialAuthService();
 
   async unregisterToken(subscription) {
     const token = JSON.stringify(subscription);
-    
+
     try {
       const response = await fetch(`${this.baseURL}/notifications/unregister-token`, {
         method: 'DELETE',
@@ -1514,24 +1723,24 @@ export default new SocialAuthService();
 
 export default new PushNotificationService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "pushNotificationService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_ai_chat_component(self):
         """Generate AI chat interface component"""
-        
+
         template = Template("""import React, { useState, useEffect, useRef } from 'react';
 import AiService from '../services/aiService';
 
-const AiChatInterface = ({ 
-  providers = ['openai', 'anthropic'], 
+const AiChatInterface = ({
+  providers = ['openai', 'anthropic'],
   models = ['gpt-4', 'claude-3-opus-20240229'],
   onConversationChange
 }) => {
@@ -1570,15 +1779,15 @@ const AiChatInterface = ({
       };
 
       const response = await AiService.startChat(payload);
-      
+
       const assistantMessage = response.message;
       setMessages(prev => [...prev, assistantMessage]);
-      
+
       if (response.conversation_id) {
         setConversationId(response.conversation_id);
         onConversationChange?.(response.conversation_id);
       }
-      
+
     } catch (err) {
       setError(err.message || 'Failed to send message');
       // Remove the user message if the request failed
@@ -1598,8 +1807,8 @@ const AiChatInterface = ({
   return (
     <div className=\"ai-chat-interface\">
       <div className=\"chat-header\">
-        <select 
-          value={selectedProvider} 
+        <select
+          value={selectedProvider}
           onChange={(e) => setSelectedProvider(e.target.value)}
           disabled={isLoading}
         >
@@ -1609,9 +1818,9 @@ const AiChatInterface = ({
             </option>
           ))}
         </select>
-        
-        <select 
-          value={selectedModel} 
+
+        <select
+          value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
           disabled={isLoading}
         >
@@ -1632,14 +1841,14 @@ const AiChatInterface = ({
             </div>
           </div>
         ))}
-        
+
         {isLoading && (
           <div className=\"message assistant loading\">
             <div className=\"message-role\">AI</div>
             <div className=\"message-content\">Thinking...</div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -1658,8 +1867,8 @@ const AiChatInterface = ({
           disabled={isLoading}
           rows={3}
         />
-        <button 
-          onClick={handleSendMessage} 
+        <button
+          onClick={handleSendMessage}
           disabled={isLoading || !inputMessage.trim()}
         >
           {isLoading ? 'Sending...' : 'Send'}
@@ -1671,19 +1880,19 @@ const AiChatInterface = ({
 
 export default AiChatInterface;
 """)
-        
+
         chat_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         chat_file = components_dir / "AiChatInterface.jsx"
-        with open(chat_file, 'w') as f:
+        with open(chat_file, 'w', encoding='utf-8') as f:
             f.write(chat_content)
-        
+
         return chat_content
-    
+
     def _generate_ai_service(self):
         """Generate AI service for frontend"""
-        
+
         template = Template("""class AiService {
   constructor() {
     this.baseURL = '/api';
@@ -1799,44 +2008,44 @@ export default AiChatInterface;
 
 export default new AiService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "aiService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_payment_components(self):
         """Generate payment-related React components"""
-        
+
         # Generate payment form component
         self._generate_payment_form_component()
-        
+
         # Generate payment method selector
         self._generate_payment_method_selector()
-        
+
         # Generate payment summary component
         self._generate_payment_summary_component()
-        
+
         # Generate payment service
         self._generate_payment_service()
-    
+
     def _generate_payment_form_component(self):
         """Generate payment form component"""
-        
+
         template = Template("""import React, { useState, useEffect } from 'react';
 import PaymentService from '../services/paymentService';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import PaymentSummary from './PaymentSummary';
 
-const PaymentForm = ({ 
-  amount, 
-  currency = 'USD', 
-  providers = ['stripe', 'paypal'], 
-  onSuccess, 
+const PaymentForm = ({
+  amount,
+  currency = 'USD',
+  providers = ['stripe', 'paypal'],
+  onSuccess,
   onError,
   showSummary = true,
   savePaymentMethod = true
@@ -1860,7 +2069,7 @@ const PaymentForm = ({
     // Load payment providers configuration
     PaymentService.getProviders().then(providers => {
       // Filter available providers
-      const availableProviders = providers.filter(p => 
+      const availableProviders = providers.filter(p =>
         providers.includes(p.name) && p.enabled
       );
       if (availableProviders.length > 0) {
@@ -1924,7 +2133,7 @@ const PaymentForm = ({
   const handleStripePayment = async (intent) => {
     const stripe = await PaymentService.getStripe();
     const elements = stripe.elements({ clientSecret: intent.client_secret });
-    
+
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
@@ -1959,13 +2168,13 @@ const PaymentForm = ({
   return (
     <div className=\"payment-form-container\">
       {showSummary && (
-        <PaymentSummary 
-          amount={amount} 
+        <PaymentSummary
+          amount={amount}
           currency={currency}
           className=\"payment-summary\"
         />
       )}
-      
+
       {error && (
         <div className=\"error-message\">
           {error}
@@ -1986,7 +2195,7 @@ const PaymentForm = ({
         {/* Billing Address */}
         <div className=\"form-section\">
           <h3>Billing Information</h3>
-          
+
           <div className=\"form-row\">
             <div className=\"form-group\">
               <label htmlFor=\"name\">Full Name</label>
@@ -1998,7 +2207,7 @@ const PaymentForm = ({
                 required
               />
             </div>
-            
+
             <div className=\"form-group\">
               <label htmlFor=\"email\">Email</label>
               <input
@@ -2034,7 +2243,7 @@ const PaymentForm = ({
                 required
               />
             </div>
-            
+
             <div className=\"form-group\">
               <label htmlFor=\"state\">State</label>
               <input
@@ -2045,7 +2254,7 @@ const PaymentForm = ({
                 required
               />
             </div>
-            
+
             <div className=\"form-group\">
               <label htmlFor=\"postal_code\">ZIP Code</label>
               <input
@@ -2082,9 +2291,9 @@ const PaymentForm = ({
           </div>
         )}
 
-        <button 
-          type=\"submit\" 
-          disabled={loading} 
+        <button
+          type=\"submit\"
+          disabled={loading}
           className=\"payment-submit-button\"
         >
           {loading ? 'Processing...' : `Pay $${amount}`}
@@ -2102,21 +2311,21 @@ const PaymentForm = ({
 
 export default PaymentForm;
 """)
-        
+
         payment_form_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         components_dir.mkdir(parents=True, exist_ok=True)
-        
+
         payment_form_file = components_dir / "PaymentForm.jsx"
-        with open(payment_form_file, 'w') as f:
+        with open(payment_form_file, 'w', encoding='utf-8') as f:
             f.write(payment_form_content)
-        
+
         return payment_form_content
-    
+
     def _generate_payment_method_selector(self):
         """Generate payment method selector component"""
-        
+
         template = Template("""import React from 'react';
 
 const PaymentMethodSelector = ({ providers = [], selected, onChange }) => {
@@ -2184,24 +2393,24 @@ const PaymentMethodSelector = ({ providers = [], selected, onChange }) => {
 
 export default PaymentMethodSelector;
 """)
-        
+
         selector_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         selector_file = components_dir / "PaymentMethodSelector.jsx"
-        with open(selector_file, 'w') as f:
+        with open(selector_file, 'w', encoding='utf-8') as f:
             f.write(selector_content)
-    
+
     def _generate_payment_summary_component(self):
         """Generate payment summary component"""
-        
+
         template = Template("""import React from 'react';
 
-const PaymentSummary = ({ 
-  amount, 
-  currency = 'USD', 
-  items = [], 
-  taxes = 0, 
+const PaymentSummary = ({
+  amount,
+  currency = 'USD',
+  items = [],
+  taxes = 0,
   shipping = 0,
   discounts = 0,
   showItems = true,
@@ -2220,7 +2429,7 @@ const PaymentSummary = ({
   return (
     <div className={`payment-summary ${className}`}>
       <h3>Order Summary</h3>
-      
+
       {showItems && items.length > 0 && (
         <div className=\"summary-items\">
           {items.map((item, index) => (
@@ -2238,7 +2447,7 @@ const PaymentSummary = ({
           ))}
         </div>
       )}
-      
+
       <div className=\"summary-calculations\">
         {subtotal > 0 && (
           <div className=\"summary-row\">
@@ -2246,28 +2455,28 @@ const PaymentSummary = ({
             <span>{formatCurrency(subtotal)}</span>
           </div>
         )}
-        
+
         {shipping > 0 && (
           <div className=\"summary-row\">
             <span>Shipping</span>
             <span>{formatCurrency(shipping)}</span>
           </div>
         )}
-        
+
         {taxes > 0 && (
           <div className=\"summary-row\">
             <span>Taxes</span>
             <span>{formatCurrency(taxes)}</span>
           </div>
         )}
-        
+
         {discounts > 0 && (
           <div className=\"summary-row discount\">
             <span>Discount</span>
             <span>-{formatCurrency(discounts)}</span>
           </div>
         )}
-        
+
         <div className=\"summary-row total\">
           <span>Total</span>
           <span>{formatCurrency(amount || total)}</span>
@@ -2279,17 +2488,17 @@ const PaymentSummary = ({
 
 export default PaymentSummary;
 """)
-        
+
         summary_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         summary_file = components_dir / "PaymentSummary.jsx"
-        with open(summary_file, 'w') as f:
+        with open(summary_file, 'w', encoding='utf-8') as f:
             f.write(summary_content)
-    
+
     def _generate_payment_service(self):
         """Generate payment service for frontend"""
-        
+
         template = Template("""class PaymentService {
   constructor() {
     this.baseURL = '/api';
@@ -2449,7 +2658,7 @@ export default PaymentSummary;
 
   async processStripePayment(clientSecret, elements) {
     const stripe = await this.getStripe();
-    
+
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
@@ -2519,25 +2728,25 @@ export default PaymentSummary;
 
 export default new PaymentService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "paymentService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_file_storage_components(self):
         """Generate file storage React components"""
-        
+
         # Generate file storage service
         self._generate_file_storage_service()
-    
+
     def _generate_file_storage_service(self):
         """Generate file storage service"""
-        
+
         template = Template("""class FileStorageService {
   constructor() {
     this.baseURL = '/api';
@@ -2546,7 +2755,7 @@ export default new PaymentService();
   async uploadFile(file, options = {}) {
     const formData = new FormData();
     formData.append('files[]', file);
-    
+
     if (options.categoryId) formData.append('category_id', options.categoryId);
     if (options.description) formData.append('description', options.description);
     if (options.isPublic !== undefined) formData.append('is_public', options.isPublic);
@@ -2575,7 +2784,7 @@ export default new PaymentService();
 
   async getFiles(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    
+
     try {
       const response = await fetch(`${this.baseURL}/files?${queryString}`, {
         headers: {
@@ -2723,25 +2932,25 @@ export default new PaymentService();
 
 export default new FileStorageService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "fileStorageService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_admin_panel_components(self):
         """Generate admin panel React components"""
-        
+
         # Generate admin service
         self._generate_admin_service()
-    
+
     def _generate_admin_service(self):
         """Generate admin service"""
-        
+
         template = Template("""class AdminService {
   constructor() {
     this.baseURL = '/api/admin';
@@ -2749,7 +2958,7 @@ export default new FileStorageService();
 
   async getDashboardData(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    
+
     try {
       const response = await fetch(`${this.baseURL}/dashboard?${queryString}`, {
         headers: {
@@ -2769,7 +2978,7 @@ export default new FileStorageService();
 
   async getUsers(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    
+
     try {
       const response = await fetch(`${this.baseURL}/users?${queryString}`, {
         headers: {
@@ -2854,339 +3063,29 @@ export default new FileStorageService();
 
 export default new AdminService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "adminService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-        
+
         return service_content
-    
+
     def _generate_smart_form_components(self):
-        """Generate intelligent form components with real-time validation"""
-        
-        # Generate smart form input components
-        self._generate_smart_input_components()
-        
-        # Generate smart form wrapper component
-        self._generate_smart_form_wrapper()
-        
-        # Generate form validation hooks
-        self._generate_form_validation_hooks()
-        
-        # Generate smart form service
-        self._generate_smart_form_service()
-        
-        # Generate form utility functions
-        self._generate_form_utilities()
-    
-    def _generate_smart_input_components(self):
-        """Generate smart input components for different field types"""
-        
-        # Smart Email Input Component
-        self._generate_smart_email_input()
-        
-        # Smart Phone Input Component
-        self._generate_smart_phone_input()
-        
-        # Smart Password Input Component
-        self._generate_smart_password_input()
-        
-        # Smart OTP Input Component
-        self._generate_smart_otp_input()
-        
-        # Smart Credit Card Input Component
-        self._generate_smart_credit_card_input()
-        
-        # Smart Search Input Component
-        self._generate_smart_search_input()
-        
-        # Smart Address Input Component
-        self._generate_smart_address_input()
-    
-    def _generate_smart_email_input(self):
-        """Generate smart email input with validation and suggestions"""
-        
-        template = Template("""import React, { useState, useEffect, useCallback } from 'react';
-import { useSmartValidation } from '../hooks/useSmartValidation';
-import { debounce } from '../utils/formUtils';
-import './SmartEmailInput.css';
+        """Generate smart form components"""
+        # TODO: Implement smart form component generation
+        pass
 
-const SmartEmailInput = ({
-  name,
-  value = '',
-  onChange,
-  onValidationChange,
-  placeholder = 'Enter your email address',
-  required = false,
-  validateDisposable = true,
-  showSuggestions = true,
-  className = '',
-  ...props
-}) => {
-  const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestionsList, setShowSuggestionsList] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  
-  const { validation, validateField } = useSmartValidation();
-  
-  // Debounced validation function
-  const debouncedValidate = useCallback(
-    debounce(async (email) => {
-      if (!email) {
-        onValidationChange?.({ isValid: !required, errors: [] });
-        return;
-      }
-      
-      setIsValidating(true);
-      try {
-        const result = await validateField('email', email, {
-          checkDisposable: validateDisposable,
-          checkTypos: true
-        });
-        
-        onValidationChange?.(result);
-        
-        if (result.suggestions && result.suggestions.length > 0) {
-          setSuggestions(result.suggestions);
-          setShowSuggestionsList(true);
-        } else {
-          setShowSuggestionsList(false);
-        }
-      } catch (error) {
-        console.error('Email validation failed:', error);
-        onValidationChange?.({ isValid: false, errors: ['Validation failed'] });
-      } finally {
-        setIsValidating(false);
-      }
-    }, 500),
-    [validateField, validateDisposable, required, onValidationChange]
-  );
-  
-  useEffect(() => {
-    debouncedValidate(inputValue);
-  }, [inputValue, debouncedValidate]);
-  
-  const handleInputChange = (e) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onChange?.(e);
-  };
-  
-  const handleSuggestionClick = (suggestion) => {
-    setInputValue(suggestion);
-    setShowSuggestionsList(false);
-    
-    // Create synthetic event for onChange
-    const syntheticEvent = {
-      target: { name, value: suggestion }
-    };
-    onChange?.(syntheticEvent);
-  };
-  
-  const validationState = validation[name];
-  const hasErrors = validationState && !validationState.isValid;
-  const inputClassName = `smart-email-input ${
-    hasErrors ? 'smart-email-input--error' : 
-    validationState?.isValid ? 'smart-email-input--valid' : ''
-  } ${className}`.trim();
-  
-  return (
-    <div className="smart-email-input-wrapper">
-      <div className="smart-input-container">
-        <input
-          type="email"
-          name={name}
-          value={inputValue}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          className={inputClassName}
-          required={required}
-          {...props}
-        />
-        
-        {isValidating && (
-          <div className="smart-input-spinner">
-            <div className="spinner"></div>
-          </div>
-        )}
-        
-        {validationState?.isValid && (
-          <div className="smart-input-checkmark">✓</div>
-        )}
-      </div>
-      
-      {/* Error Messages */}
-      {hasErrors && (
-        <div className="smart-input-errors">
-          {validationState.errors.map((error, index) => (
-            <div key={index} className="smart-input-error">
-              {error}
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {/* Suggestions Dropdown */}
-      {showSuggestions && showSuggestionsList && suggestions.length > 0 && (
-        <div className="smart-email-suggestions">
-          <div className="suggestions-header">Did you mean?</div>
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              type="button"
-              className="suggestion-item"
-              onClick={() => handleSuggestionClick(suggestion)}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+    def _generate_i18n_components(self):
+        """Generate i18n components"""
+        # TODO: Implement i18n component generation
+        pass
 
-export default SmartEmailInput;
-""")
-        
-        component_content = template.render()
-        
-        components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "SmartEmailInput.jsx"
-        with open(component_file, 'w') as f:
-            f.write(component_content)
-        
-        # Generate CSS for smart email input
-        css_content = """.smart-email-input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.smart-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.smart-email-input {
-  width: 100%;
-  padding: 12px 40px 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  background-color: #fff;
-}
-
-.smart-email-input:focus {
-  outline: none;
-  border-color: var(--primary-color, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.smart-email-input--valid {
-  border-color: var(--success-color, #10b981);
-  padding-right: 40px;
-}
-
-.smart-email-input--error {
-  border-color: var(--danger-color, #ef4444);
-}
-
-.smart-input-spinner {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid var(--primary-color, #3b82f6);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.smart-input-checkmark {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--success-color, #10b981);
-  font-weight: bold;
-  font-size: 18px;
-}
-
-.smart-input-errors {
-  margin-top: 4px;
-}
-
-.smart-input-error {
-  color: var(--danger-color, #ef4444);
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-
-.smart-email-suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #e1e5e9;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  margin-top: 4px;
-}
-
-.suggestions-header {
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #6b7280;
-  border-bottom: 1px solid #e1e5e9;
-  background-color: #f9fafb;
-}
-
-.suggestion-item {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.suggestion-item:hover {
-  background-color: #f3f4f6;
-}
-
-.suggestion-item:last-child {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-"""
-        
-        css_file = components_dir / "SmartEmailInput.css"
-        with open(css_file, 'w') as f:
-            f.write(css_content)
-    
     def _generate_smart_phone_input(self):
         """Generate smart phone input with auto-formatting and country detection"""
-        
+
         template = Template("""import React, { useState, useEffect, useCallback } from 'react';
 import { useSmartValidation } from '../hooks/useSmartValidation';
 import { formatPhoneNumber, detectCountryCode } from '../utils/formUtils';
@@ -3209,9 +3108,9 @@ const SmartPhoneInput = ({
   const [countryCode, setCountryCode] = useState('+1');
   const [detectedCountry, setDetectedCountry] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  
+
   const { validation, validateField } = useSmartValidation();
-  
+
   useEffect(() => {
     if (detectCountry && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -3239,22 +3138,22 @@ const SmartPhoneInput = ({
       );
     }
   }, [detectCountry]);
-  
+
   const debouncedValidate = useCallback(
     debounce(async (phone) => {
       if (!phone) {
         onValidationChange?.({ isValid: !required, errors: [] });
         return;
       }
-      
+
       setIsValidating(true);
       try {
-        const fullPhone = countryCode + phone.replace(/\D/g, '');
+        const fullPhone = countryCode + phone.replace(/\\D/g, '');
         const result = await validateField('phone', fullPhone, {
           validateRegistered,
           countryCode
         });
-        
+
         onValidationChange?.(result);
       } catch (error) {
         console.error('Phone validation failed:', error);
@@ -3265,50 +3164,50 @@ const SmartPhoneInput = ({
     }, 500),
     [validateField, countryCode, validateRegistered, required, onValidationChange]
   );
-  
+
   useEffect(() => {
     debouncedValidate(inputValue);
   }, [inputValue, debouncedValidate]);
-  
+
   const handleInputChange = (e) => {
     let newValue = e.target.value;
-    
+
     if (autoFormat) {
       newValue = formatPhoneNumber(newValue, countryCode);
     }
-    
+
     setInputValue(newValue);
-    
+
     // Create synthetic event for onChange
     const syntheticEvent = {
       target: { name, value: newValue }
     };
     onChange?.(syntheticEvent);
   };
-  
+
   const handleCountryChange = (e) => {
     const newCountryCode = e.target.value;
     setCountryCode(newCountryCode);
-    
+
     // Reformat phone number for new country
     if (autoFormat && inputValue) {
       const formatted = formatPhoneNumber(inputValue, newCountryCode);
       setInputValue(formatted);
-      
+
       const syntheticEvent = {
         target: { name, value: formatted }
       };
       onChange?.(syntheticEvent);
     }
   };
-  
+
   const validationState = validation[name];
   const hasErrors = validationState && !validationState.isValid;
   const inputClassName = `smart-phone-input ${
-    hasErrors ? 'smart-phone-input--error' : 
+    hasErrors ? 'smart-phone-input--error' :
     validationState?.isValid ? 'smart-phone-input--valid' : ''
   } ${className}`.trim();
-  
+
   const countryCodes = [
     { code: '+1', country: 'US', name: 'United States' },
     { code: '+1', country: 'CA', name: 'Canada' },
@@ -3326,11 +3225,11 @@ const SmartPhoneInput = ({
     { code: '+55', country: 'BR', name: 'Brazil' },
     { code: '+52', country: 'MX', name: 'Mexico' }
   ];
-  
+
   return (
     <div className="smart-phone-input-wrapper">
       <div className="smart-phone-input-container">
-        <select 
+        <select
           className="country-code-select"
           value={countryCode}
           onChange={handleCountryChange}
@@ -3341,7 +3240,7 @@ const SmartPhoneInput = ({
             </option>
           ))}
         </select>
-        
+
         <div className="smart-input-container">
           <input
             type="tel"
@@ -3353,25 +3252,25 @@ const SmartPhoneInput = ({
             required={required}
             {...props}
           />
-          
+
           {isValidating && (
             <div className="smart-input-spinner">
               <div className="spinner"></div>
             </div>
           )}
-          
+
           {validationState?.isValid && (
             <div className="smart-input-checkmark">✓</div>
           )}
         </div>
       </div>
-      
+
       {detectedCountry && (
         <div className="detected-country-hint">
           📍 Detected location: {detectedCountry.name}
         </div>
       )}
-      
+
       {/* Error Messages */}
       {hasErrors && (
         <div className="smart-input-errors">
@@ -3388,14 +3287,14 @@ const SmartPhoneInput = ({
 
 export default SmartPhoneInput;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartPhoneInput.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for smart phone input
         css_content = """.smart-phone-input-wrapper {
   position: relative;
@@ -3461,20 +3360,20 @@ export default SmartPhoneInput;
   .smart-phone-input-container {
     flex-direction: column;
   }
-  
+
   .country-code-select {
     width: 100%;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartPhoneInput.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_smart_password_input(self):
         """Generate smart password input with strength meter and breach checking"""
-        
+
         template = Template("""import React, { useState, useEffect, useCallback } from 'react';
 import { useSmartValidation } from '../hooks/useSmartValidation';
 import { calculatePasswordStrength, debounce } from '../utils/formUtils';
@@ -3500,9 +3399,9 @@ const SmartPasswordInput = ({
   const [strengthText, setStrengthText] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [breachWarning, setBreachWarning] = useState('');
-  
+
   const { validation, validateField } = useSmartValidation();
-  
+
   const debouncedValidate = useCallback(
     debounce(async (password) => {
       if (!password) {
@@ -3512,25 +3411,25 @@ const SmartPasswordInput = ({
         setBreachWarning('');
         return;
       }
-      
+
       // Calculate password strength
       const strength = calculatePasswordStrength(password);
       setStrengthScore(strength.score);
       setStrengthText(strength.text);
-      
+
       setIsValidating(true);
       try {
         const result = await validateField('password', password, {
           minStrength,
           checkBreaches
         });
-        
+
         if (result.breach_detected) {
           setBreachWarning('This password has been found in data breaches. Please choose a different one.');
         } else {
           setBreachWarning('');
         }
-        
+
         onValidationChange?.(result);
       } catch (error) {
         console.error('Password validation failed:', error);
@@ -3541,42 +3440,42 @@ const SmartPasswordInput = ({
     }, 300),
     [validateField, minStrength, checkBreaches, required, onValidationChange]
   );
-  
+
   useEffect(() => {
     debouncedValidate(inputValue);
   }, [inputValue, debouncedValidate]);
-  
+
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     onChange?.(e);
   };
-  
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-  
+
   const validationState = validation[name];
   const hasErrors = validationState && !validationState.isValid;
   const inputClassName = `smart-password-input ${
-    hasErrors ? 'smart-password-input--error' : 
+    hasErrors ? 'smart-password-input--error' :
     validationState?.isValid ? 'smart-password-input--valid' : ''
   } ${className}`.trim();
-  
+
   const getStrengthColor = (score) => {
     if (score <= 1) return '#ef4444'; // red
     if (score <= 2) return '#f59e0b'; // yellow
     if (score <= 3) return '#3b82f6'; // blue
     return '#10b981'; // green
   };
-  
+
   const getStrengthLabel = (score) => {
     if (score <= 1) return 'Weak';
     if (score <= 2) return 'Fair';
     if (score <= 3) return 'Good';
     return 'Strong';
   };
-  
+
   return (
     <div className="smart-password-input-wrapper">
       <div className="smart-input-container">
@@ -3590,7 +3489,7 @@ const SmartPasswordInput = ({
           required={required}
           {...props}
         />
-        
+
         {showToggle && (
           <button
             type="button"
@@ -3601,23 +3500,23 @@ const SmartPasswordInput = ({
             {showPassword ? '🙈' : '👁️'}
           </button>
         )}
-        
+
         {isValidating && (
           <div className="smart-input-spinner">
             <div className="spinner"></div>
           </div>
         )}
-        
+
         {validationState?.isValid && !isValidating && (
           <div className="smart-input-checkmark">✓</div>
         )}
       </div>
-      
+
       {/* Password Strength Meter */}
       {showStrengthMeter && inputValue && (
         <div className="password-strength-meter">
           <div className="strength-bar-container">
-            <div 
+            <div
               className="strength-bar"
               style={{
                 width: `${(strengthScore / 4) * 100}%`,
@@ -3626,7 +3525,7 @@ const SmartPasswordInput = ({
             />
           </div>
           <div className="strength-text">
-            <span 
+            <span
               className="strength-label"
               style={{ color: getStrengthColor(strengthScore) }}
             >
@@ -3636,14 +3535,14 @@ const SmartPasswordInput = ({
           </div>
         </div>
       )}
-      
+
       {/* Breach Warning */}
       {breachWarning && (
         <div className="breach-warning">
           ⚠️ {breachWarning}
         </div>
       )}
-      
+
       {/* Error Messages */}
       {hasErrors && (
         <div className="smart-input-errors">
@@ -3660,14 +3559,14 @@ const SmartPasswordInput = ({
 
 export default SmartPasswordInput;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartPasswordInput.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for smart password input
         css_content = """.smart-password-input-wrapper {
   position: relative;
@@ -3765,20 +3664,20 @@ export default SmartPasswordInput;
   .smart-password-input {
     padding: 12px 70px 12px 12px;
   }
-  
+
   .password-toggle-btn {
     right: 35px;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartPasswordInput.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_smart_otp_input(self):
         """Generate smart OTP input with auto-detection and auto-fill"""
-        
+
         # For brevity, implementing a basic OTP component
         template = Template("""import React, { useState, useEffect, useRef } from 'react';
 import './SmartOtpInput.css';
@@ -3795,7 +3694,7 @@ const SmartOtpInput = ({
 }) => {
   const [values, setValues] = useState(Array(length).fill(''));
   const inputs = useRef([]);
-  
+
   useEffect(() => {
     if (autoFill && 'OTPCredential' in window) {
       navigator.credentials.get({
@@ -3810,7 +3709,7 @@ const SmartOtpInput = ({
       }).catch(console.error);
     }
   }, [autoFill, length, onComplete]);
-  
+
   const handleChange = (index, value) => {
     if (value.length > 1) {
       // Handle paste
@@ -3821,28 +3720,28 @@ const SmartOtpInput = ({
       }
       return;
     }
-    
+
     const newValues = [...values];
     newValues[index] = value;
     setValues(newValues);
-    
+
     onChange?.({ target: { name, value: newValues.join('') } });
-    
+
     if (value && index < length - 1) {
       inputs.current[index + 1]?.focus();
     }
-    
+
     if (newValues.every(v => v !== '') && newValues.length === length) {
       onComplete?.(newValues.join(''));
     }
   };
-  
+
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !values[index] && index > 0) {
       inputs.current[index - 1]?.focus();
     }
   };
-  
+
   return (
     <div className={`smart-otp-input ${className}`}>
       {Array(length).fill(0).map((_, index) => (
@@ -3867,14 +3766,14 @@ const SmartOtpInput = ({
 
 export default SmartOtpInput;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartOtpInput.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for OTP input
         css_content = """.smart-otp-input {
   display: flex;
@@ -3908,19 +3807,20 @@ export default SmartOtpInput;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartOtpInput.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_smart_credit_card_input(self):
         """Generate smart credit card input with auto-formatting and validation"""
-        pass  # Implementing placeholder for now
-    
+        # TODO: Implement smart credit card input
+
     def _generate_smart_search_input(self):
         """Generate smart search input with autocomplete and typo tolerance"""
-        
-        template = Template("""import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+        template = Template("""import React from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import SmartFormService from '../services/smartFormService';
 import { debounce } from '../utils/formUtils';
 import './SmartSearchInput.css';
@@ -3948,10 +3848,10 @@ const SmartSearchInput = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [hasTypo, setHasTypo] = useState(false);
-  
+
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
-  
+
   // Load recent searches on mount
   useEffect(() => {
     if (showRecentSearches) {
@@ -3959,7 +3859,7 @@ const SmartSearchInput = ({
       setRecentSearches(recent.slice(0, 5));
     }
   }, [searchType, showRecentSearches]);
-  
+
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (query) => {
@@ -3968,11 +3868,11 @@ const SmartSearchInput = ({
         setHasTypo(false);
         return;
       }
-      
+
       setIsLoading(true);
       try {
         let results;
-        
+
         if (customDataSource) {
           results = await customDataSource(query, contextFilters);
         } else {
@@ -3987,12 +3887,12 @@ const SmartSearchInput = ({
           );
           results = response;
         }
-        
+
         setSuggestions(results.suggestions || []);
         setHasTypo(results.hasTypoCorrection || false);
         setShowSuggestions(true);
         setSelectedIndex(-1);
-        
+
       } catch (error) {
         console.error('Search failed:', error);
         setSuggestions([]);
@@ -4002,22 +3902,22 @@ const SmartSearchInput = ({
     }, 300),
     [searchType, minChars, maxSuggestions, showTypoTolerance, contextFilters, customDataSource]
   );
-  
+
   useEffect(() => {
     debouncedSearch(inputValue);
   }, [inputValue, debouncedSearch]);
-  
+
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setInputValue(newValue);
     onChange?.(e);
   };
-  
+
   const handleSuggestionSelect = (suggestion, index) => {
     const selectedValue = typeof suggestion === 'string' ? suggestion : suggestion.text || suggestion.title;
     setInputValue(selectedValue);
     setShowSuggestions(false);
-    
+
     // Save to recent searches
     if (showRecentSearches) {
       const recent = JSON.parse(localStorage.getItem(`recent_searches_${searchType}`) || '[]');
@@ -4025,7 +3925,7 @@ const SmartSearchInput = ({
       localStorage.setItem(`recent_searches_${searchType}`, JSON.stringify(updated));
       setRecentSearches(updated.slice(0, 5));
     }
-    
+
     // Create synthetic event for onChange
     const syntheticEvent = {
       target: { name, value: selectedValue }
@@ -4033,25 +3933,25 @@ const SmartSearchInput = ({
     onChange?.(syntheticEvent);
     onSelect?.(suggestion, index);
   };
-  
+
   const handleKeyDown = (e) => {
     if (!showSuggestions) return;
-    
+
     const suggestionsList = [...suggestions];
     if (recentSearches.length > 0 && inputValue.length < minChars) {
       suggestionsList.unshift(...recentSearches.map(search => ({ text: search, type: 'recent' })));
     }
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < suggestionsList.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev > 0 ? prev - 1 : suggestionsList.length - 1
         );
         break;
@@ -4068,13 +3968,13 @@ const SmartSearchInput = ({
         break;
     }
   };
-  
+
   const handleFocus = () => {
     if (inputValue.length >= minChars || (recentSearches.length > 0 && inputValue.length === 0)) {
       setShowSuggestions(true);
     }
   };
-  
+
   const handleBlur = (e) => {
     // Delay hiding suggestions to allow for clicks
     setTimeout(() => {
@@ -4084,14 +3984,14 @@ const SmartSearchInput = ({
       }
     }, 200);
   };
-  
+
   const renderSuggestion = (suggestion, index) => {
     const isSelected = index === selectedIndex;
     const isRecent = suggestion.type === 'recent';
-    const displayText = typeof suggestion === 'string' ? suggestion : 
+    const displayText = typeof suggestion === 'string' ? suggestion :
                        suggestion.text || suggestion.title || suggestion.name;
     const description = suggestion.description || suggestion.subtitle;
-    
+
     return (
       <div
         key={`${isRecent ? 'recent' : 'suggestion'}-${index}`}
@@ -4118,22 +4018,22 @@ const SmartSearchInput = ({
       </div>
     );
   };
-  
+
   // Combine suggestions with recent searches if applicable
   const getSuggestionsList = () => {
     let allSuggestions = [...suggestions];
-    
+
     // Show recent searches when input is empty or very short
     if (inputValue.length < minChars && recentSearches.length > 0) {
       const recentItems = recentSearches.map(search => ({ text: search, type: 'recent' }));
       allSuggestions = [...recentItems, ...allSuggestions];
     }
-    
+
     return allSuggestions.slice(0, maxSuggestions);
   };
-  
+
   const suggestionsList = getSuggestionsList();
-  
+
   return (
     <div className={`smart-search-input-wrapper ${className}`}>
       <div className="smart-search-input-container">
@@ -4151,14 +4051,14 @@ const SmartSearchInput = ({
           autoComplete="off"
           {...props}
         />
-        
+
         <div className="search-input-indicators">
           {isLoading && (
             <div className="search-spinner">
               <div className="spinner"></div>
             </div>
           )}
-          
+
           {hasTypo && !isLoading && (
             <div className="typo-indicator" title="Showing results with typo correction">
               🔍
@@ -4166,15 +4066,15 @@ const SmartSearchInput = ({
           )}
         </div>
       </div>
-      
+
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestionsList.length > 0 && (
         <div ref={suggestionsRef} className="search-suggestions">
           {inputValue.length < minChars && recentSearches.length > 0 && (
             <div className="suggestions-header">
               <span>Recent Searches</span>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="clear-recent-btn"
                 onClick={() => {
                   localStorage.removeItem(`recent_searches_${searchType}`);
@@ -4185,11 +4085,11 @@ const SmartSearchInput = ({
               </button>
             </div>
           )}
-          
-          {suggestionsList.map((suggestion, index) => 
+
+          {suggestionsList.map((suggestion, index) =>
             renderSuggestion(suggestion, index)
           )}
-          
+
           {hasTypo && (
             <div className="typo-notice">
               Results include corrections for possible typos
@@ -4197,7 +4097,7 @@ const SmartSearchInput = ({
           )}
         </div>
       )}
-      
+
       {/* No Results */}
       {showSuggestions && suggestionsList.length === 0 && !isLoading && inputValue.length >= minChars && (
         <div className="search-suggestions">
@@ -4212,14 +4112,14 @@ const SmartSearchInput = ({
 
 export default SmartSearchInput;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartSearchInput.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for smart search input
         css_content = """.smart-search-input-wrapper {
   position: relative;
@@ -4404,20 +4304,20 @@ export default SmartSearchInput;
   .smart-search-input {
     padding: 10px 45px 10px 12px;
   }
-  
+
   .search-suggestions {
     max-height: 250px;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartSearchInput.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_smart_address_input(self):
         """Generate smart address input with geocoding and auto-complete"""
-        
+
         template = Template("""import React, { useState, useEffect, useCallback } from 'react';
 import { useSmartValidation } from '../hooks/useSmartValidation';
 import { debounce } from '../utils/formUtils';
@@ -4450,14 +4350,14 @@ const SmartAddressInput = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [mapPreviewUrl, setMapPreviewUrl] = useState('');
-  
+
   const { validation, validateField } = useSmartValidation();
-  
+
   // Debounced geocoding function
   const debouncedGeocode = useCallback(
     debounce(async (address) => {
       if (!address || !enableGeocoding) return;
-      
+
       setIsGeocoding(true);
       try {
         const response = await fetch('/api/geocoding/search', {
@@ -4470,22 +4370,22 @@ const SmartAddressInput = ({
             countryRestriction
           })
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           if (data.suggestions && data.suggestions.length > 0) {
             setSuggestions(data.suggestions);
             setShowSuggestions(true);
           }
-          
+
           // Update coordinates if we have a precise match
           if (data.coordinates) {
             setAddressData(prev => ({
               ...prev,
               coordinates: data.coordinates
             }));
-            
+
             // Generate map preview URL
             if (showMapPreview) {
               const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${data.coordinates.lat},${data.coordinates.lng}&zoom=15&size=300x200&markers=${data.coordinates.lat},${data.coordinates.lng}&key=YOUR_API_KEY`;
@@ -4501,28 +4401,28 @@ const SmartAddressInput = ({
     }, 500),
     [enableGeocoding, countryRestriction, showMapPreview]
   );
-  
+
   const handleFieldChange = (field, newValue) => {
     const updatedAddress = {
       ...addressData,
       [field]: newValue
     };
-    
+
     setAddressData(updatedAddress);
-    
+
     // Trigger onChange with full address object
     const syntheticEvent = {
       target: { name, value: updatedAddress }
     };
     onChange?.(syntheticEvent);
-    
+
     // Trigger geocoding for street address changes
     if (field === 'street' && enableAutocomplete) {
       const fullAddress = `${newValue}, ${updatedAddress.city}, ${updatedAddress.state} ${updatedAddress.postalCode}, ${updatedAddress.country}`.trim();
       debouncedGeocode(fullAddress);
     }
   };
-  
+
   const handleSuggestionSelect = (suggestion) => {
     const updatedAddress = {
       street: suggestion.street || '',
@@ -4532,33 +4432,33 @@ const SmartAddressInput = ({
       country: suggestion.country || '',
       coordinates: suggestion.coordinates || null
     };
-    
+
     setAddressData(updatedAddress);
     setShowSuggestions(false);
     setSuggestions([]);
-    
+
     // Update map preview
     if (showMapPreview && suggestion.coordinates) {
       const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${suggestion.coordinates.lat},${suggestion.coordinates.lng}&zoom=15&size=300x200&markers=${suggestion.coordinates.lat},${suggestion.coordinates.lng}&key=YOUR_API_KEY`;
       setMapPreviewUrl(mapUrl);
     }
-    
+
     const syntheticEvent = {
       target: { name, value: updatedAddress }
     };
     onChange?.(syntheticEvent);
   };
-  
+
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by this browser.');
       return;
     }
-    
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        
+
         try {
           // Reverse geocode to get address
           const response = await fetch('/api/geocoding/reverse', {
@@ -4571,7 +4471,7 @@ const SmartAddressInput = ({
               lng: longitude
             })
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             if (data.address) {
@@ -4579,14 +4479,14 @@ const SmartAddressInput = ({
                 ...data.address,
                 coordinates: { lat: latitude, lng: longitude }
               };
-              
+
               setAddressData(updatedAddress);
-              
+
               const syntheticEvent = {
                 target: { name, value: updatedAddress }
               };
               onChange?.(syntheticEvent);
-              
+
               // Update map preview
               if (showMapPreview) {
                 const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=15&size=300x200&markers=${latitude},${longitude}&key=YOUR_API_KEY`;
@@ -4604,41 +4504,41 @@ const SmartAddressInput = ({
       }
     );
   };
-  
+
   const validateAddress = async () => {
     if (!required && !addressData.street) {
       onValidationChange?.({ isValid: true, errors: [] });
       return;
     }
-    
+
     try {
       const result = await validateField('address', addressData, {
         required,
         enableGeocoding
       });
-      
+
       onValidationChange?.(result);
     } catch (error) {
       console.error('Address validation failed:', error);
       onValidationChange?.({ isValid: false, errors: ['Address validation failed'] });
     }
   };
-  
+
   // Validate on address change
   useEffect(() => {
     validateAddress();
   }, [addressData]);
-  
+
   const validationState = validation[name];
   const hasErrors = validationState && !validationState.isValid;
-  
+
   return (
     <div className={`smart-address-input-wrapper ${className}`}>
       <div className="address-input-header">
         <label className={`address-label ${required ? 'required' : ''}`}>
           Address {required && <span className="required-star">*</span>}
         </label>
-        
+
         <button
           type="button"
           className="location-btn"
@@ -4648,7 +4548,7 @@ const SmartAddressInput = ({
           📍 Current Location
         </button>
       </div>
-      
+
       <div className="address-fields">
         {/* Street Address */}
         <div className="address-field-group">
@@ -4659,14 +4559,14 @@ const SmartAddressInput = ({
             placeholder="Street address"
             className={`address-input ${hasErrors ? 'address-input--error' : ''}`}
           />
-          
+
           {isGeocoding && (
             <div className="geocoding-spinner">
               <div className="spinner"></div>
             </div>
           )}
         </div>
-        
+
         {/* City, State, Postal Code */}
         <div className="address-row">
           <input
@@ -4676,7 +4576,7 @@ const SmartAddressInput = ({
             placeholder="City"
             className="address-input city-input"
           />
-          
+
           <input
             type="text"
             value={addressData.state}
@@ -4684,7 +4584,7 @@ const SmartAddressInput = ({
             placeholder="State/Province"
             className="address-input state-input"
           />
-          
+
           <input
             type="text"
             value={addressData.postalCode}
@@ -4693,7 +4593,7 @@ const SmartAddressInput = ({
             className="address-input postal-input"
           />
         </div>
-        
+
         {/* Country */}
         <input
           type="text"
@@ -4703,7 +4603,7 @@ const SmartAddressInput = ({
           className="address-input country-input"
         />
       </div>
-      
+
       {/* Address Suggestions */}
       {showSuggestions && suggestions.length > 0 && enableAutocomplete && (
         <div className="address-suggestions">
@@ -4716,7 +4616,7 @@ const SmartAddressInput = ({
               onClick={() => handleSuggestionSelect(suggestion)}
             >
               <div className="suggestion-address">
-                {suggestion.formattedAddress || 
+                {suggestion.formattedAddress ||
                  `${suggestion.street}, ${suggestion.city}, ${suggestion.state} ${suggestion.postalCode}`
                 }
               </div>
@@ -4727,21 +4627,21 @@ const SmartAddressInput = ({
           ))}
         </div>
       )}
-      
+
       {/* Map Preview */}
       {showMapPreview && mapPreviewUrl && (
         <div className="map-preview">
           <img src={mapPreviewUrl} alt="Address location" className="map-image" />
         </div>
       )}
-      
+
       {/* Coordinates Display */}
       {addressData.coordinates && (
         <div className="coordinates-display">
           📍 {addressData.coordinates.lat.toFixed(6)}, {addressData.coordinates.lng.toFixed(6)}
         </div>
       )}
-      
+
       {/* Error Messages */}
       {hasErrors && (
         <div className="address-errors">
@@ -4758,14 +4658,14 @@ const SmartAddressInput = ({
 
 export default SmartAddressInput;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartAddressInput.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for smart address input
         css_content = """.smart-address-input-wrapper {
   width: 100%;
@@ -4946,33 +4846,31 @@ export default SmartAddressInput;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .location-btn {
     align-self: flex-end;
   }
-  
+
   .address-row {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  
+
   .address-input {
     padding: 10px 12px;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartAddressInput.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
-    def _generate_smart_address_input(self):
-        """Generate smart address input with geocoding"""
-        pass  # Implementing placeholder for now
-    
+
+
+
     def _generate_form_validation_hooks(self):
         """Generate React hooks for smart form validation"""
-        
+
         # Generate useSmartValidation hook
         template = Template("""import { useState, useCallback } from 'react';
 import SmartFormService from '../services/smartFormService';
@@ -4980,18 +4878,18 @@ import SmartFormService from '../services/smartFormService';
 export const useSmartValidation = () => {
   const [validation, setValidation] = useState({});
   const [isValidating, setIsValidating] = useState(false);
-  
+
   const validateField = useCallback(async (fieldType, value, options = {}) => {
     setIsValidating(true);
-    
+
     try {
       const result = await SmartFormService.validateField(fieldType, value, options);
-      
+
       setValidation(prev => ({
         ...prev,
         [options.fieldName || fieldType]: result
       }));
-      
+
       return result;
     } catch (error) {
       const errorResult = {
@@ -4999,38 +4897,38 @@ export const useSmartValidation = () => {
         errors: [error.message || 'Validation failed'],
         suggestions: []
       };
-      
+
       setValidation(prev => ({
         ...prev,
         [options.fieldName || fieldType]: errorResult
       }));
-      
+
       throw error;
     } finally {
       setIsValidating(false);
     }
   }, []);
-  
+
   const validateForm = useCallback(async (formData, fieldConfigs) => {
     setIsValidating(true);
     const results = {};
-    
+
     try {
       const promises = Object.entries(formData).map(async ([fieldName, value]) => {
         const config = fieldConfigs[fieldName] || {};
         if (config.type && value) {
           const result = await SmartFormService.validateField(
-            config.type, 
-            value, 
+            config.type,
+            value,
             { ...config, fieldName }
           );
           results[fieldName] = result;
         }
       });
-      
+
       await Promise.all(promises);
       setValidation(results);
-      
+
       const isFormValid = Object.values(results).every(result => result.isValid);
       return { isValid: isFormValid, fieldResults: results };
     } catch (error) {
@@ -5039,7 +4937,7 @@ export const useSmartValidation = () => {
       setIsValidating(false);
     }
   }, []);
-  
+
   const clearValidation = useCallback((fieldName) => {
     if (fieldName) {
       setValidation(prev => {
@@ -5051,7 +4949,7 @@ export const useSmartValidation = () => {
       setValidation({});
     }
   }, []);
-  
+
   return {
     validation,
     validateField,
@@ -5065,29 +4963,29 @@ export const useFormState = (initialState = {}) => {
   const [formData, setFormData] = useState(initialState);
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const updateField = useCallback((name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     setIsDirty(true);
   }, []);
-  
+
   const updateMultipleFields = useCallback((updates) => {
     setFormData(prev => ({ ...prev, ...updates }));
     setIsDirty(true);
   }, []);
-  
+
   const resetForm = useCallback((newState = initialState) => {
     setFormData(newState);
     setIsDirty(false);
     setIsSubmitting(false);
   }, [initialState]);
-  
+
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
     updateField(name, fieldValue);
   }, [updateField]);
-  
+
   return {
     formData,
     isDirty,
@@ -5100,17 +4998,17 @@ export const useFormState = (initialState = {}) => {
   };
 };
 """)
-        
+
         hook_content = template.render()
-        
+
         hooks_dir = self.frontend_path / "src" / "hooks"
         hook_file = hooks_dir / "useSmartValidation.js"
-        with open(hook_file, 'w') as f:
+        with open(hook_file, 'w', encoding='utf-8') as f:
             f.write(hook_content)
-    
+
     def _generate_smart_form_service(self):
         """Generate smart form service for API communication"""
-        
+
         template = Template("""class SmartFormService {
   constructor() {
     this.baseURL = '/api';
@@ -5220,7 +5118,7 @@ export const useFormState = (initialState = {}) => {
   async checkDeviceFingerprint() {
     try {
       const fingerprint = await this.generateDeviceFingerprint();
-      
+
       const response = await fetch(`${this.baseURL}/smart-forms/check-device`, {
         method: 'POST',
         headers: {
@@ -5246,7 +5144,7 @@ export const useFormState = (initialState = {}) => {
     ctx.textBaseline = 'top';
     ctx.font = '14px Arial';
     ctx.fillText('Device fingerprint', 2, 2);
-    
+
     const fingerprint = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -5258,7 +5156,7 @@ export const useFormState = (initialState = {}) => {
       cookieEnabled: navigator.cookieEnabled,
       doNotTrack: navigator.doNotTrack
     };
-    
+
     return btoa(JSON.stringify(fingerprint));
   }
 
@@ -5294,17 +5192,17 @@ export const useFormState = (initialState = {}) => {
 
 export default new SmartFormService();
 """)
-        
+
         service_content = template.render()
-        
+
         services_dir = self.frontend_path / "src" / "services"
         service_file = services_dir / "smartFormService.js"
-        with open(service_file, 'w') as f:
+        with open(service_file, 'w', encoding='utf-8') as f:
             f.write(service_content)
-    
+
     def _generate_form_utilities(self):
         """Generate utility functions for smart forms"""
-        
+
         template = Template("""// Form utility functions
 
 // Debounce function to limit API calls
@@ -5318,8 +5216,8 @@ export const debounce = (func, delay) => {
 
 // Phone number formatting
 export const formatPhoneNumber = (value, countryCode = '+1') => {
-  const cleaned = value.replace(/\D/g, '');
-  
+  const cleaned = value.replace(/\\D/g, '');
+
   if (countryCode === '+1') {
     // US/Canada format
     if (cleaned.length >= 6) {
@@ -5330,7 +5228,7 @@ export const formatPhoneNumber = (value, countryCode = '+1') => {
       return cleaned;
     }
   }
-  
+
   // Default formatting for other countries
   return cleaned;
 };
@@ -5351,37 +5249,37 @@ export const detectCountryCode = async (latitude, longitude) => {
 export const calculatePasswordStrength = (password) => {
   let score = 0;
   let feedback = [];
-  
+
   if (password.length >= 8) {
     score += 1;
   } else {
     feedback.push('At least 8 characters');
   }
-  
+
   if (/[a-z]/.test(password)) {
     score += 1;
   } else {
     feedback.push('Include lowercase letters');
   }
-  
+
   if (/[A-Z]/.test(password)) {
     score += 1;
   } else {
     feedback.push('Include uppercase letters');
   }
-  
-  if (/\d/.test(password)) {
+
+  if (/\\d/.test(password)) {
     score += 1;
   } else {
     feedback.push('Include numbers');
   }
-  
-  if (/[^\w\s]/.test(password)) {
+
+  if (/[^\\w\\s]/.test(password)) {
     score += 1;
   } else {
     feedback.push('Include special characters');
   }
-  
+
   const strengthLabels = {
     0: 'Very Weak',
     1: 'Weak',
@@ -5390,7 +5288,7 @@ export const calculatePasswordStrength = (password) => {
     4: 'Strong',
     5: 'Very Strong'
   };
-  
+
   return {
     score,
     text: strengthLabels[score] || 'Very Weak',
@@ -5404,12 +5302,12 @@ export const getEmailSuggestions = (email) => {
     'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
     'icloud.com', 'aol.com', 'live.com', 'msn.com'
   ];
-  
+
   const [localPart, domain] = email.split('@');
   if (!domain) return [];
-  
+
   const suggestions = [];
-  
+
   // Check for typos in common domains
   commonDomains.forEach(commonDomain => {
     const distance = levenshteinDistance(domain.toLowerCase(), commonDomain);
@@ -5417,22 +5315,22 @@ export const getEmailSuggestions = (email) => {
       suggestions.push(`${localPart}@${commonDomain}`);
     }
   });
-  
+
   return suggestions;
 };
 
 // Levenshtein distance for typo detection
 const levenshteinDistance = (str1, str2) => {
   const matrix = [];
-  
+
   for (let i = 0; i <= str2.length; i++) {
     matrix[i] = [i];
   }
-  
+
   for (let j = 0; j <= str1.length; j++) {
     matrix[0][j] = j;
   }
-  
+
   for (let i = 1; i <= str2.length; i++) {
     for (let j = 1; j <= str1.length; j++) {
       if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -5446,13 +5344,13 @@ const levenshteinDistance = (str1, str2) => {
       }
     }
   }
-  
+
   return matrix[str2.length][str1.length];
 };
 
 // Credit card formatting
 export const formatCreditCard = (value) => {
-  const cleaned = value.replace(/\D/g, '');
+  const cleaned = value.replace(/\\D/g, '');
   const match = cleaned.match(/.{1,4}/g);
   return match ? match.join(' ') : '';
 };
@@ -5465,13 +5363,13 @@ export const detectCreditCardType = (number) => {
     amex: /^3[47]/,
     discover: /^6(?:011|5)/,
   };
-  
+
   for (const [type, pattern] of Object.entries(patterns)) {
     if (pattern.test(number)) {
       return type;
     }
   }
-  
+
   return 'unknown';
 };
 
@@ -5479,7 +5377,7 @@ export const detectCreditCardType = (number) => {
 export const serializeFormData = (formElement) => {
   const formData = new FormData(formElement);
   const data = {};
-  
+
   for (const [key, value] of formData.entries()) {
     if (data[key]) {
       // Handle multiple values (checkboxes, multi-select)
@@ -5492,23 +5390,23 @@ export const serializeFormData = (formElement) => {
       data[key] = value;
     }
   }
-  
+
   return data;
 };
 
 // Form validation helpers
 export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   return emailRegex.test(email);
 };
 
 export const isValidPhone = (phone, countryCode = '+1') => {
-  const cleaned = phone.replace(/\D/g, '');
-  
+  const cleaned = phone.replace(/\\D/g, '');
+
   if (countryCode === '+1') {
     return cleaned.length === 10;
   }
-  
+
   // Basic validation for other countries
   return cleaned.length >= 7 && cleaned.length <= 15;
 };
@@ -5548,17 +5446,17 @@ export const clearLocalDraft = (formId) => {
   }
 };
 """)
-        
+
         utils_content = template.render()
-        
+
         utils_dir = self.frontend_path / "src" / "utils"
         utils_file = utils_dir / "formUtils.js"
-        with open(utils_file, 'w') as f:
+        with open(utils_file, 'w', encoding='utf-8') as f:
             f.write(utils_content)
-    
+
     def _generate_smart_form_wrapper(self):
         """Generate smart form wrapper component"""
-        
+
         template = Template("""import React, { useState, useEffect, useCallback } from 'react';
 import { useSmartValidation, useFormState } from '../hooks/useSmartValidation';
 import SmartFormService from '../services/smartFormService';
@@ -5583,10 +5481,10 @@ const SmartForm = ({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  
+
   const { validation, validateForm, clearValidation, isValidating } = useSmartValidation();
   const { formData, isDirty, isSubmitting, setIsSubmitting, updateField, resetForm, handleInputChange } = useFormState(initialData);
-  
+
   // Load draft on mount
   useEffect(() => {
     if (formId && enableDraftSave) {
@@ -5597,11 +5495,11 @@ const SmartForm = ({
       }
     }
   }, [formId, enableDraftSave, resetForm]);
-  
+
   // Auto-save drafts
   useEffect(() => {
     if (!autoSaveDrafts || !formId || !isDirty) return;
-    
+
     const interval = setInterval(async () => {
       setIsAutoSaving(true);
       try {
@@ -5618,37 +5516,37 @@ const SmartForm = ({
         setIsAutoSaving(false);
       }
     }, autoSaveInterval);
-    
+
     return () => clearInterval(interval);
   }, [autoSaveDrafts, formId, formData, isDirty, autoSaveInterval]);
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitAttempted(true);
     setIsSubmitting(true);
-    
+
     try {
       // Validate entire form
       const validationResult = await validateForm(formData, fieldConfigs);
-      
+
       if (!validationResult.isValid) {
         onValidationChange?.(validationResult);
         return;
       }
-      
+
       // Submit form
       await onSubmit?.(formData);
-      
+
       // Clear draft after successful submit
       if (formId && enableDraftSave) {
         clearLocalDraft(formId);
       }
-      
+
       // Reset form state
       resetForm();
       setSubmitAttempted(false);
       clearValidation();
-      
+
     } catch (error) {
       console.error('Form submission failed:', error);
       throw error;
@@ -5656,11 +5554,11 @@ const SmartForm = ({
       setIsSubmitting(false);
     }
   };
-  
+
   const handleFieldChange = useCallback(async (e) => {
     const { name, value } = e.target;
     handleInputChange(e);
-    
+
     // Real-time validation if enabled
     if (validateOnChange && fieldConfigs[name]) {
       try {
@@ -5674,30 +5572,30 @@ const SmartForm = ({
       }
     }
   }, [handleInputChange, validateOnChange, fieldConfigs]);
-  
+
   const isFormValid = () => {
     if (!submitAttempted) return true;
     return Object.values(validation).every(result => result.isValid);
   };
-  
+
   const getProgressPercentage = () => {
     const requiredFields = Object.entries(fieldConfigs)
       .filter(([_, config]) => config.required)
       .map(([name, _]) => name);
-    
+
     if (requiredFields.length === 0) return 100;
-    
-    const filledRequired = requiredFields.filter(field => 
+
+    const filledRequired = requiredFields.filter(field =>
       formData[field] && formData[field].toString().trim() !== ''
     ).length;
-    
+
     return Math.round((filledRequired / requiredFields.length) * 100);
   };
-  
+
   const cloneChildrenWithProps = (children) => {
     return React.Children.map(children, (child) => {
       if (!React.isValidElement(child)) return child;
-      
+
       // Clone smart form inputs with additional props
       if (child.props.name && fieldConfigs[child.props.name]) {
         return React.cloneElement(child, {
@@ -5709,24 +5607,24 @@ const SmartForm = ({
           ...child.props
         });
       }
-      
+
       // Recursively clone children
       if (child.props.children) {
         return React.cloneElement(child, {
           children: cloneChildrenWithProps(child.props.children)
         });
       }
-      
+
       return child;
     });
   };
-  
+
   return (
     <div className={`smart-form-wrapper ${className}`}>
       {showProgressIndicator && (
         <div className="form-progress">
           <div className="progress-bar">
-            <div 
+            <div
               className="progress-fill"
               style={{ width: `${getProgressPercentage()}%` }}
             />
@@ -5736,22 +5634,22 @@ const SmartForm = ({
           </span>
         </div>
       )}
-      
+
       <form className="smart-form" onSubmit={handleSubmit} {...props}>
         {cloneChildrenWithProps(children)}
-        
+
         <div className="form-actions">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting || isValidating || (!isFormValid() && submitAttempted)}
             className={`submit-btn ${
-              isSubmitting ? 'submit-btn--loading' : 
+              isSubmitting ? 'submit-btn--loading' :
               !isFormValid() && submitAttempted ? 'submit-btn--error' : ''
             }`}
           >
             {isSubmitting ? 'Submitting...' : 'Submit'}
           </button>
-          
+
           {enableDraftSave && (
             <div className="draft-status">
               {isAutoSaving && <span className="saving">Saving...</span>}
@@ -5770,14 +5668,14 @@ const SmartForm = ({
 
 export default SmartForm;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SmartForm.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for smart form
         css_content = """.smart-form-wrapper {
   max-width: 600px;
@@ -5876,44 +5774,44 @@ export default SmartForm;
   .smart-form-wrapper {
     padding: 16px;
   }
-  
+
   .form-actions {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .submit-btn {
     width: 100%;
   }
 }
 """
-        
+
         css_file = components_dir / "SmartForm.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_ux_helper_components(self):
         """Generate UX helper components for better user experience"""
-        
+
         # Generate tooltip component
         self._generate_tooltip_component()
-        
+
         # Generate progressive disclosure component
         self._generate_progressive_disclosure_component()
-        
+
         # Generate session timeout warning component
         self._generate_session_timeout_component()
-        
+
         # Generate quick login component
         self._generate_quick_login_component()
-        
+
         # Generate help panel component
         self._generate_help_panel_component()
-    
+
     def _generate_tooltip_component(self):
         """Generate tooltip component for inline help"""
-        
+
         template = Template("""import React, { useState, useRef, useEffect } from 'react';
 import './Tooltip.css';
 
@@ -5932,37 +5830,37 @@ const Tooltip = ({
   const triggerRef = useRef(null);
   const tooltipRef = useRef(null);
   const timeoutRef = useRef(null);
-  
+
   const showTooltip = () => {
     if (disabled) return;
-    
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
       calculatePosition();
     }, trigger === 'hover' ? delay : 0);
   };
-  
+
   const hideTooltip = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     setIsVisible(false);
   };
-  
+
   const calculatePosition = () => {
     if (!triggerRef.current || !tooltipRef.current) return;
-    
+
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
+
     let top, left;
-    
+
     switch (placement) {
       case 'top':
         top = triggerRect.top - tooltipRect.height - 8;
@@ -5984,7 +5882,7 @@ const Tooltip = ({
         top = triggerRect.top - tooltipRect.height - 8;
         left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
     }
-    
+
     // Keep tooltip within viewport
     if (left < 8) left = 8;
     if (left + tooltipRect.width > viewportWidth - 8) {
@@ -5994,23 +5892,23 @@ const Tooltip = ({
     if (top + tooltipRect.height > viewportHeight - 8) {
       top = viewportHeight - tooltipRect.height - 8;
     }
-    
+
     setPosition({ top, left });
   };
-  
+
   useEffect(() => {
     if (isVisible) {
       calculatePosition();
       window.addEventListener('scroll', calculatePosition);
       window.addEventListener('resize', calculatePosition);
-      
+
       return () => {
         window.removeEventListener('scroll', calculatePosition);
         window.removeEventListener('resize', calculatePosition);
       };
     }
   }, [isVisible]);
-  
+
   const handleTriggerEvent = (eventType) => {
     if (trigger === 'hover') {
       if (eventType === 'mouseenter') showTooltip();
@@ -6024,7 +5922,7 @@ const Tooltip = ({
       if (eventType === 'blur') hideTooltip();
     }
   };
-  
+
   return (
     <>
       <span
@@ -6038,7 +5936,7 @@ const Tooltip = ({
       >
         {children}
       </span>
-      
+
       {isVisible && (
         <div
           ref={tooltipRef}
@@ -6067,14 +5965,14 @@ const Tooltip = ({
 
 export default Tooltip;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "Tooltip.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for tooltip
         css_content = """.tooltip-trigger {
   display: inline-block;
@@ -6169,14 +6067,14 @@ export default Tooltip;
   border-right-color: white;
 }
 """
-        
+
         css_file = components_dir / "Tooltip.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_progressive_disclosure_component(self):
         """Generate progressive disclosure component to hide/show advanced fields"""
-        
+
         template = Template("""import React, { useState, useRef, useEffect } from 'react';
 import './ProgressiveDisclosure.css';
 
@@ -6191,18 +6089,18 @@ const ProgressiveDisclosure = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [height, setHeight] = useState(defaultOpen ? 'auto' : 0);
   const contentRef = useRef(null);
-  
+
   const toggle = () => {
     const newState = !isOpen;
     setIsOpen(newState);
     onToggle?.(newState);
-    
+
     if (contentRef.current) {
       if (newState) {
         // Opening
         const scrollHeight = contentRef.current.scrollHeight;
         setHeight(scrollHeight);
-        
+
         // Set to auto after animation for responsive behavior
         setTimeout(() => {
           if (contentRef.current) {
@@ -6213,7 +6111,7 @@ const ProgressiveDisclosure = ({
         // Closing
         const scrollHeight = contentRef.current.scrollHeight;
         setHeight(scrollHeight);
-        
+
         // Force reflow then set to 0
         setTimeout(() => {
           setHeight(0);
@@ -6221,7 +6119,7 @@ const ProgressiveDisclosure = ({
       }
     }
   };
-  
+
   useEffect(() => {
     if (isOpen && contentRef.current) {
       const resizeObserver = new ResizeObserver(() => {
@@ -6230,18 +6128,18 @@ const ProgressiveDisclosure = ({
           return;
         }
       });
-      
+
       resizeObserver.observe(contentRef.current);
-      
+
       return () => {
         resizeObserver.disconnect();
       };
     }
   }, [isOpen, height]);
-  
+
   return (
     <div className={`progressive-disclosure ${className}`}>
-      <div 
+      <div
         className="progressive-disclosure-trigger"
         onClick={toggle}
         role="button"
@@ -6258,7 +6156,7 @@ const ProgressiveDisclosure = ({
           ▶️
         </span>
       </div>
-      
+
       <div
         ref={contentRef}
         className="progressive-disclosure-content"
@@ -6297,14 +6195,14 @@ export const AdvancedFields = ({ children, label = 'Advanced Options', ...props 
 
 export default ProgressiveDisclosure;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "ProgressiveDisclosure.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for progressive disclosure
         css_content = """.progressive-disclosure {
   margin-bottom: 16px;
@@ -6394,7 +6292,7 @@ export default ProgressiveDisclosure;
     padding: 10px 12px;
     font-size: 14px;
   }
-  
+
   .progressive-disclosure-inner {
     padding: 12px;
   }
@@ -6413,21 +6311,21 @@ export default ProgressiveDisclosure;
   .progressive-disclosure-trigger {
     border-width: 2px;
   }
-  
+
   .progressive-disclosure-trigger:focus {
     border-color: #000;
     box-shadow: 0 0 0 3px #000;
   }
 }
 """
-        
+
         css_file = components_dir / "ProgressiveDisclosure.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_session_timeout_component(self):
         """Generate session timeout warning component"""
-        
+
         template = Template("""import React, { useState, useEffect, useCallback } from 'react';
 import './SessionTimeout.css';
 
@@ -6442,7 +6340,7 @@ const SessionTimeout = ({
   const [timeLeft, setTimeLeft] = useState(timeoutMinutes * 60);
   const [showWarning, setShowWarning] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
-  
+
   const extendSession = useCallback(async () => {
     try {
       // Call API to extend session
@@ -6453,7 +6351,7 @@ const SessionTimeout = ({
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         setTimeLeft(timeoutMinutes * 60);
         setShowWarning(false);
@@ -6468,7 +6366,7 @@ const SessionTimeout = ({
       handleTimeout();
     }
   }, [timeoutMinutes, onExtend]);
-  
+
   const handleTimeout = useCallback(() => {
     setShowWarning(false);
     localStorage.removeItem('auth_token');
@@ -6476,7 +6374,7 @@ const SessionTimeout = ({
     // Redirect to login
     window.location.href = '/login?reason=session_expired';
   }, [onTimeout]);
-  
+
   const resetTimer = useCallback(() => {
     if (isActive) {
       setTimeLeft(timeoutMinutes * 60);
@@ -6484,67 +6382,67 @@ const SessionTimeout = ({
       setIsIdle(false);
     }
   }, [timeoutMinutes, isActive]);
-  
+
   // Activity detection
   useEffect(() => {
     if (!isActive) return;
-    
+
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
+
     const handleActivity = () => {
       if (!showWarning) {
         resetTimer();
       }
     };
-    
+
     events.forEach(event => {
       document.addEventListener(event, handleActivity, true);
     });
-    
+
     return () => {
       events.forEach(event => {
         document.removeEventListener(event, handleActivity, true);
       });
     };
   }, [resetTimer, showWarning, isActive]);
-  
+
   // Timer countdown
   useEffect(() => {
     if (!isActive) return;
-    
+
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         const newTime = prev - 1;
-        
+
         if (newTime <= 0) {
           handleTimeout();
           return 0;
         }
-        
+
         // Show warning when time is low
         if (newTime <= warningMinutes * 60 && !showWarning) {
           setShowWarning(true);
           setIsIdle(true);
           onWarning?.(newTime);
         }
-        
+
         return newTime;
       });
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [warningMinutes, showWarning, handleTimeout, onWarning, isActive]);
-  
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
   if (!isActive || !showWarning) {
     return null;
   }
-  
+
   return (
     <div className="session-timeout-overlay">
       <div className="session-timeout-modal">
@@ -6552,7 +6450,7 @@ const SessionTimeout = ({
           <h3>Session Expiring Soon</h3>
           <div className="timeout-icon">⏰</div>
         </div>
-        
+
         <div className="session-timeout-content">
           <p>
             Your session will expire in <strong>{formatTime(timeLeft)}</strong>.
@@ -6561,32 +6459,32 @@ const SessionTimeout = ({
             You will be automatically logged out for security reasons.
           </p>
         </div>
-        
+
         <div className="session-timeout-progress">
-          <div 
+          <div
             className="timeout-progress-bar"
             style={{
               width: `${(timeLeft / (warningMinutes * 60)) * 100}%`
             }}
           />
         </div>
-        
+
         <div className="session-timeout-actions">
-          <button 
+          <button
             className="btn btn-primary"
             onClick={extendSession}
           >
             Stay Logged In
           </button>
-          
-          <button 
+
+          <button
             className="btn btn-secondary"
             onClick={handleTimeout}
           >
             Logout Now
           </button>
         </div>
-        
+
         <div className="session-timeout-info">
           <small>
             Click anywhere or press any key to extend your session automatically.
@@ -6599,14 +6497,14 @@ const SessionTimeout = ({
 
 export default SessionTimeout;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "SessionTimeout.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for session timeout
         css_content = """.session-timeout-overlay {
   position: fixed;
@@ -6740,11 +6638,11 @@ export default SessionTimeout;
     padding: 20px;
     margin: 16px;
   }
-  
+
   .session-timeout-actions {
     flex-direction: column;
   }
-  
+
   .session-timeout-actions .btn {
     width: 100%;
   }
@@ -6755,7 +6653,7 @@ export default SessionTimeout;
   .session-timeout-modal {
     animation: none;
   }
-  
+
   .timeout-progress-bar {
     transition: none;
   }
@@ -6766,20 +6664,20 @@ export default SessionTimeout;
   .session-timeout-modal {
     border: 2px solid #000;
   }
-  
+
   .session-timeout-actions .btn {
     border: 1px solid #000;
   }
 }
 """
-        
+
         css_file = components_dir / "SessionTimeout.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_quick_login_component(self):
         """Generate quick login component with OTP"""
-        
+
         template = Template("""import React, { useState } from 'react';
 import SmartOtpInput from './SmartOtpInput';
 import './QuickLogin.css';
@@ -6798,11 +6696,11 @@ const QuickLogin = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
-  
+
   const sendOTP = async (retryIdentifier = identifier) => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
@@ -6814,13 +6712,13 @@ const QuickLogin = ({
           identifier: retryIdentifier
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setStep('code');
         setResendCooldown(60); // 60 second cooldown
-        
+
         // Start countdown
         const countdown = setInterval(() => {
           setResendCooldown(prev => {
@@ -6840,11 +6738,11 @@ const QuickLogin = ({
       setIsLoading(false);
     }
   };
-  
+
   const verifyOTP = async (otp) => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
@@ -6857,13 +6755,13 @@ const QuickLogin = ({
           otp
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setStep('success');
         localStorage.setItem('auth_token', data.token);
-        
+
         setTimeout(() => {
           onSuccess?.(data);
         }, 1000);
@@ -6876,7 +6774,7 @@ const QuickLogin = ({
       setIsLoading(false);
     }
   };
-  
+
   const handleMethodSubmit = (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
@@ -6885,11 +6783,11 @@ const QuickLogin = ({
     }
     sendOTP();
   };
-  
+
   const formatIdentifier = (value) => {
     if (method === 'phone') {
       // Basic phone formatting
-      const cleaned = value.replace(/\D/g, '');
+      const cleaned = value.replace(/\\D/g, '');
       if (cleaned.length >= 6) {
         return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
       } else if (cleaned.length >= 3) {
@@ -6899,20 +6797,20 @@ const QuickLogin = ({
     }
     return value;
   };
-  
+
   return (
     <div className={`quick-login ${className}`}>
       <div className="quick-login-header">
         <h3>Quick Login</h3>
         <p>Get instant access with a verification code</p>
       </div>
-      
+
       {error && (
         <div className="quick-login-error">
           {error}
         </div>
       )}
-      
+
       {step === 'method' && (
         <form onSubmit={handleMethodSubmit} className="quick-login-form">
           {allowedMethods.length > 1 && (
@@ -6929,7 +6827,7 @@ const QuickLogin = ({
               ))}
             </div>
           )}
-          
+
           <div className="input-group">
             <input
               type={method === 'email' ? 'email' : 'tel'}
@@ -6940,9 +6838,9 @@ const QuickLogin = ({
               required
             />
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             className="quick-login-btn"
             disabled={isLoading}
           >
@@ -6950,14 +6848,14 @@ const QuickLogin = ({
           </button>
         </form>
       )}
-      
+
       {step === 'code' && (
         <div className="otp-verification">
           <div className="otp-info">
             <p>
               We sent a verification code to <strong>{identifier}</strong>
             </p>
-            <button 
+            <button
               type="button"
               className="change-method-btn"
               onClick={() => setStep('method')}
@@ -6965,7 +6863,7 @@ const QuickLogin = ({
               Change {method}
             </button>
           </div>
-          
+
           <div className="otp-input-container">
             <SmartOtpInput
               length={6}
@@ -6974,7 +6872,7 @@ const QuickLogin = ({
               placeholder="•"
             />
           </div>
-          
+
           <div className="otp-actions">
             <button
               type="button"
@@ -6982,15 +6880,15 @@ const QuickLogin = ({
               onClick={() => sendOTP()}
               disabled={resendCooldown > 0 || isLoading}
             >
-              {resendCooldown > 0 
-                ? `Resend in ${resendCooldown}s` 
+              {resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
                 : 'Resend Code'
               }
             </button>
           </div>
         </div>
       )}
-      
+
       {step === 'success' && (
         <div className="login-success">
           <div className="success-icon">✓</div>
@@ -6998,9 +6896,9 @@ const QuickLogin = ({
           <p>Redirecting you now...</p>
         </div>
       )}
-      
+
       <div className="quick-login-footer">
-        <button 
+        <button
           type="button"
           className="cancel-btn"
           onClick={onCancel}
@@ -7014,14 +6912,14 @@ const QuickLogin = ({
 
 export default QuickLogin;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "QuickLogin.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for quick login
         css_content = """.quick-login {
   max-width: 400px;
@@ -7255,24 +7153,24 @@ export default QuickLogin;
     padding: 20px;
     margin: 16px;
   }
-  
+
   .method-selector {
     flex-direction: column;
   }
-  
+
   .method-btn {
     padding: 12px;
   }
 }
 """
-        
+
         css_file = components_dir / "QuickLogin.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_help_panel_component(self):
         """Generate help panel component for contextual assistance"""
-        
+
         template = Template("""import React, { useState, useEffect } from 'react';
 import './HelpPanel.css';
 
@@ -7287,19 +7185,19 @@ const HelpPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredContent, setFilteredContent] = useState([]);
-  
+
   useEffect(() => {
     if (isOpen && context) {
       loadHelpContent(context);
     }
   }, [isOpen, context]);
-  
+
   useEffect(() => {
     if (helpContent && searchQuery) {
       const filtered = helpContent.items.filter(item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.tags && item.tags.some(tag => 
+        (item.tags && item.tags.some(tag =>
           tag.toLowerCase().includes(searchQuery.toLowerCase())
         ))
       );
@@ -7308,7 +7206,7 @@ const HelpPanel = ({
       setFilteredContent(helpContent?.items || []);
     }
   }, [helpContent, searchQuery]);
-  
+
   const loadHelpContent = async (contextType) => {
     setIsLoading(true);
     try {
@@ -7321,7 +7219,7 @@ const HelpPanel = ({
       setIsLoading(false);
     }
   };
-  
+
   const getContextualHelp = (contextType) => {
     const helpDatabase = {
       general: {
@@ -7375,19 +7273,19 @@ const HelpPanel = ({
         ]
       }
     };
-    
+
     return helpDatabase[contextType] || helpDatabase.general;
   };
-  
+
   if (!isOpen) {
     return null;
   }
-  
+
   return (
     <div className={`help-panel help-panel--${position} ${className}`}>
       <div className="help-panel-header">
         <h3>{helpContent?.title || 'Help'}</h3>
-        <button 
+        <button
           className="help-panel-close"
           onClick={onClose}
           aria-label="Close help panel"
@@ -7395,7 +7293,7 @@ const HelpPanel = ({
           ×
         </button>
       </div>
-      
+
       <div className="help-panel-search">
         <input
           type="text"
@@ -7406,7 +7304,7 @@ const HelpPanel = ({
         />
         <div className="help-search-icon">🔍</div>
       </div>
-      
+
       <div className="help-panel-content">
         {isLoading ? (
           <div className="help-loading">
@@ -7418,7 +7316,7 @@ const HelpPanel = ({
             {filteredContent.length === 0 && searchQuery ? (
               <div className="help-no-results">
                 <p>No help topics found for \"{searchQuery}\"</p>
-                <button 
+                <button
                   className="help-clear-search"
                   onClick={() => setSearchQuery('')}
                 >
@@ -7445,7 +7343,7 @@ const HelpPanel = ({
           </div>
         )}
       </div>
-      
+
       <div className="help-panel-footer">
         <div className="help-shortcuts">
           <small>Press <kbd>F1</kbd> for help, <kbd>Esc</kbd> to close</small>
@@ -7461,7 +7359,7 @@ const HelpPanel = ({
 // Help trigger button component
 export const HelpButton = ({ context = 'general', className = '' }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  
+
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'F1') {
@@ -7471,11 +7369,11 @@ export const HelpButton = ({ context = 'general', className = '' }) => {
         setIsHelpOpen(false);
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [isHelpOpen]);
-  
+
   return (
     <>
       <button
@@ -7486,7 +7384,7 @@ export const HelpButton = ({ context = 'general', className = '' }) => {
       >
         ?
       </button>
-      
+
       <HelpPanel
         isOpen={isHelpOpen}
         onClose={() => setIsHelpOpen(false)}
@@ -7498,14 +7396,14 @@ export const HelpButton = ({ context = 'general', className = '' }) => {
 
 export default HelpPanel;
 """)
-        
+
         component_content = template.render()
-        
+
         components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "HelpPanel.jsx"
-        with open(component_file, 'w') as f:
+        with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
-        
+
         # Generate CSS for help panel
         css_content = """.help-panel {
   position: fixed;
@@ -7754,7 +7652,7 @@ export default HelpPanel;
     left: 0;
     right: 0;
   }
-  
+
   .help-button {
     bottom: 16px;
     right: 16px;
@@ -7769,121 +7667,20 @@ export default HelpPanel;
   .help-panel {
     transition: none;
   }
-  
+
   .help-spinner {
     animation: none;
   }
 }
 """
-        
+
         css_file = components_dir / "HelpPanel.css"
-        with open(css_file, 'w') as f:
+        with open(css_file, 'w', encoding='utf-8') as f:
             f.write(css_content)
-    
+
     def _generate_serverless_components(self):
-        """Generate serverless components if serverless is configured"""
-        try:
-            from ..integrations.serverless_integration import ServerlessIntegration
-            
-            # Initialize serverless integration
-            serverless_integration = ServerlessIntegration()
-            serverless_integration.initialize(self.ir.serverless)
-            
-            # Generate React components
-            components = serverless_integration.generate_react_components()
-            
-            # Write components to files
-            components_dir = self.frontend_path / "src" / "components" / "serverless"
-            components_dir.mkdir(parents=True, exist_ok=True)
-            
-            for component_name, component_code in components.items():
-                component_file = components_dir / f"{component_name}.tsx"
-                with open(component_file, 'w', encoding='utf-8') as f:
-                    f.write(component_code)
-            
-            print("Generated serverless components successfully")
-            
-        except Exception as e:
-            print(f"Failed to generate serverless components: {e}")
-    
-    def _generate_i18n_components(self):
-        """Generate i18n components if i18n is configured"""
-        try:
-            from ..integrations.i18n_integration import I18nIntegration
-            
-            # Initialize i18n integration
-            i18n_integration = I18nIntegration()
-            i18n_integration.initialize(self.ir.i18n)
-            
-            # Generate React components
-            components = i18n_integration.generate_react_components()
-            
-            # Write components to files
-            components_dir = self.frontend_path / "src" / "components" / "i18n"
-            components_dir.mkdir(parents=True, exist_ok=True)
-            
-            for component_name, component_code in components.items():
-                component_file = components_dir / f"{component_name}.tsx"
-                with open(component_file, 'w', encoding='utf-8') as f:
-                    f.write(component_code)
-            
-            # Generate i18n hooks
-            hooks_dir = self.frontend_path / "src" / "hooks"
-            use_translation_file = hooks_dir / "useTranslation.ts"
-            
-            # Create a simple useTranslation hook
-            use_translation_content = '''import { useState, useEffect } from 'react';
+        """Generate serverless components"""
+        # TODO: Implement serverless component generation
+        pass
 
-export const useTranslation = () => {
-  const [language, setLanguage] = useState('en');
-  
-  useEffect(() => {
-    // Load language from localStorage or browser settings
-    const savedLanguage = localStorage.getItem('language') || 'en';
-    setLanguage(savedLanguage);
-  }, []);
-  
-  const changeLanguage = (newLanguage: string) => {
-    setLanguage(newLanguage);
-    localStorage.setItem('language', newLanguage);
-  };
-  
-  // Mock translation function - in a real app this would fetch translations
-  const t = (key: string, params: Record<string, any> = {}) => {
-    // This is a mock implementation - in a real app, you would fetch translations
-    const translations: Record<string, Record<string, string>> = {
-      en: {
-        welcome: 'Welcome',
-        login: 'Login',
-        logout: 'Logout'
-      },
-      es: {
-        welcome: 'Bienvenido',
-        login: 'Iniciar sesión',
-        logout: 'Cerrar sesión'
-      }
-    };
-    
-    const translation = translations[language]?.[key] || key;
-    
-    // Replace parameters
-    let result = translation;
-    Object.keys(params).forEach(param => {
-      result = result.replace(new RegExp(`{${param}}`, 'g'), params[param]);
-    });
-    
-    return result;
-  };
-  
-  return { t, language, changeLanguage };
-};
 
-export default useTranslation;'''
-            
-            with open(use_translation_file, 'w', encoding='utf-8') as f:
-                f.write(use_translation_content)
-            
-            print("Generated i18n components successfully")
-            
-        except Exception as e:
-            print(f"Failed to generate i18n components: {e}")

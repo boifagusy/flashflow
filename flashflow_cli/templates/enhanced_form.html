@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashFlow Enhanced Form</title>
+    {{ form_styles }}
+</head>
+<body>
+    <div class="container">
+        <h1>FlashFlow Enhanced Form Example</h1>
+        <p>This form demonstrates beautiful persistent error feedback and password visibility toggle features.</p>
+        
+        <form id="enhanced-form">
+            {{ username_field }}
+            {{ email_field }}
+            {{ password_field }}
+            {{ confirm_password_field }}
+            {{ phone_field }}
+            
+            <button type="submit" class="btn-submit">Submit Form</button>
+        </form>
+    </div>
+    
+    {{ form_scripts }}
+    
+    <script>
+        // Initialize form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle form submission
+            handleFormSubmission('enhanced-form', function(formData) {
+                // Simulate form submission
+                alert('Form submitted successfully!\\n\\nForm Data:\\n' + 
+                      Array.from(formData.entries()).map(([key, value]) => 
+                          `${key}: ${value}`).join('\\n'));
+            });
+        });
+    </script>
+</body>
+</html>

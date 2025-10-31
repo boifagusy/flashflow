@@ -417,6 +417,25 @@ def setup_unified_routes(app):
             "version": "0.1.0"
         })
     
+    # Register AI/ML integration routes
+    try:
+        from flashflow_cli.integrations.automl_integration import register_automl_routes
+        register_automl_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.federated_integration import register_federated_routes
+        register_federated_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.model_serving_integration import register_model_serving_routes
+        register_model_serving_routes(app)
+    except ImportError:
+        pass
+    
     @app.route('/android')
     def android_preview():
         """Android mockup preview"""

@@ -4,47 +4,45 @@ FlashFlow CLI - Main entry point
 """
 
 import click
+from flashflow_cli.commands.build import build
+from flashflow_cli.commands.serve import serve
+from flashflow_cli.commands.new import new
+from flashflow_cli.commands.test import test
+from flashflow_cli.commands.install import install
+from flashflow_cli.commands.deploy import deploy
+from flashflow_cli.commands.custom import custom
+from flashflow_cli.commands.theme import theme
+from flashflow_cli.commands.demo_form import demo_form
+
 import os
 import sys
 from pathlib import Path
 
-from .commands import new, install, build, serve, test, deploy, migrate, setup
+from .commands import new, install, build, serve, test, deploy, migrate, setup, custom
 from .core import FlashFlowProject
 from .__init__ import __version__
 
-@click.group()
-@click.version_option(__version__)
-@click.pass_context
-def cli(ctx):
-    """
-    FlashFlow - Single-syntax full-stack framework
-    
-    Build complete applications with landing pages, mobile apps, 
-    backend APIs, and databases from a single .flow file.
-    """
-    ctx.ensure_object(dict)
-    
-    # Find project root
-    current_dir = Path.cwd()
-    project_root = None
-    
-    for parent in [current_dir] + list(current_dir.parents):
-        if (parent / "flashflow.json").exists():
-            project_root = parent
-            break
-    
-    ctx.obj['project_root'] = project_root
-    ctx.obj['current_dir'] = current_dir
+# DEPRECATED: This module has been moved to cli/core/main.py
+# This stub will be removed in a future version
+import warnings
+warnings.warn("flashflow_cli.main is deprecated, use cli.core.main instead", DeprecationWarning, stacklevel=2)
 
-# Register commands
-cli.add_command(new.new)
-cli.add_command(install.install)
-cli.add_command(build.build)
-cli.add_command(serve.serve)
-cli.add_command(test.test)
-cli.add_command(deploy.deploy)
-cli.add_command(migrate.migrate)
-cli.add_command(setup.setup)
+from cli.core.main import *
+
+@click.group()
+def cli():
+    """FlashFlow CLI - A full-stack framework for building cross-platform applications"""
+    pass
+
+cli.add_command(build)
+cli.add_command(serve)
+cli.add_command(new)
+cli.add_command(test)
+cli.add_command(install)
+cli.add_command(deploy)
+cli.add_command(custom)
+cli.add_command(theme)
+cli.add_command(demo_form)
 
 def main():
     """Main entry point for the CLI"""
