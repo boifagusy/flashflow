@@ -10,6 +10,8 @@ from typing import Dict, Any
 from jinja2 import Template
 
 from ..core import FlashFlowProject, FlashFlowIR
+from flashflow_cli.components.slider import SliderComponent
+from flashflow_cli.components.animations import AnimationUtils
 
 class FrontendGenerator:
     """Generates frontend code from FlashFlow IR"""
@@ -19,6 +21,10 @@ class FrontendGenerator:
         self.ir = ir
         self.env = env
         self.frontend_path = project.dist_path / "frontend"
+        
+        # Initialize animation components
+        self.slider_component = SliderComponent()
+        self.animation_utils = AnimationUtils()
 
     def generate(self):
         """Generate complete frontend"""
@@ -6195,6 +6201,364 @@ export const AdvancedFields = ({ children, label = 'Advanced Options', ...props 
 
 export default ProgressiveDisclosure;
 """)
+
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        component_file = components_dir / "ProgressiveDisclosure.jsx"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+        # Generate CSS for progressive disclosure
+        css_content = """.progressive-disclosure-trigger {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--primary-color, #3b82f6);
+}
+
+.progressive-disclosure-trigger:hover {
+  color: var(--primary-color-dark, #2563eb);
+}
+
+.progressive-disclosure-trigger:focus {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+.progressive-disclosure-trigger:focus-visible {
+  outline: 2px solid var(--primary-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+.disclosure-icon {
+  transition: transform 0.2s ease;
+}
+
+.disclosure-icon--open {
+  transform: rotate(90deg);
+}
+
+.progressive-disclosure-content {
+  margin-top: 8px;
+}
+
+.advanced-fields-trigger {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.advanced-fields-trigger:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.advanced-fields-content {
+  margin-top: 12px;
+  padding-left: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .progressive-disclosure-trigger {
+    font-size: 16px;
+  }
+
+  .advanced-fields-trigger {
+    font-size: 14px;
+  }
+}
+
+```
+
+    def _generate_slider_component(self):
+        """Generate slider component with animations"""
+        
+        # Create slider component file
+        template = Template("""import React, { useState, useEffect } from 'react';
+import './Slider.css';
+
+const Slider = ({
+  min = 0,
+  max = 100,
+  initialValue = 50,
+  step = 1,
+  animationType = 'slide',
+  animationDuration = 300,
+  onChange,
+  id = 'slider',
+  className = '',
+  showValue = true
+}) => {
+  const [value, setValue] = useState(initialValue);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (onChange) {
+      onChange(value);
+    }
+  }, [value, onChange]);
+
+  const handleChange = (e) => {
+    const newValue = parseInt(e.target.value);
+    setIsAnimating(true);
+    
+    // Apply animation class
+    const slider = e.target;
+    slider.classList.add('animating');
+    
+    setTimeout(() => {
+      slider.classList.remove('animating');
+      setIsAnimating(false);
+    }, animationDuration);
+    
+    setValue(newValue);
+  };
+
+  const handleMouseUp = (e) => {
+    // Add bounce effect on release
+    const slider = e.target;
+    slider.classList.add('bounce');
+    
+    setTimeout(() => {
+      slider.classList.remove('bounce');
+    }, 500);
+  };
+
+  return (
+    <div className={`flashflow-slider-container ${className}`}>
+      <input
+        type="range"
+        id={id}
+        className={`flashflow-slider ${animationType}-animation ${isAnimating ? 'animating' : ''}`}
+        min={min}
+        max={max}
+        value={value}
+        step={step}
+        onChange={handleChange}
+        onMouseUp={handleMouseUp}
+        data-animation-type={animationType}
+        data-animation-duration={animationDuration}
+      />
+      {showValue && (
+        <div className="flashflow-slider-value" id={`${id}-value`}>
+          {value}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Slider;
+""")
+
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        component_file = components_dir / "Slider.jsx"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+        # Generate CSS for slider
+        css_content = self.slider_component.generate_css()
+        
+        css_file = components_dir / "Slider.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(css_content)
+
+    def _generate_animation_utilities(self):
+        """Generate animation utilities for frontend"""
+        
+        # Create animation utilities file
+        template = Template("""import React from 'react';
+import './Animations.css';
+
+// Animation utility functions
+export const fadeIn = (element, duration = 300) => {
+  if (!element) return;
+  
+  element.style.opacity = '0';
+  element.style.transform = 'translateY(10px)';
+  element.style.transition = `opacity ${duration}ms ease-in-out, transform ${duration}ms ease-in-out`;
+  
+  setTimeout(() => {
+    element.style.opacity = '1';
+    element.style.transform = 'translateY(0)';
+  }, 10);
+};
+
+export const fadeOut = (element, duration = 300, callback = null) => {
+  if (!element) return;
+  
+  element.style.opacity = '1';
+  element.style.transform = 'translateY(0)';
+  element.style.transition = `opacity ${duration}ms ease-in-out, transform ${duration}ms ease-in-out`;
+  
+  setTimeout(() => {
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(10px)';
+    
+    if (callback) {
+      setTimeout(callback, duration);
+    }
+  }, 10);
+};
+
+export const slideUp = (element, duration = 400) => {
+  if (!element) return;
+  
+  element.style.transform = 'translateY(100%)';
+  element.style.opacity = '0';
+  element.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+  
+  setTimeout(() => {
+    element.style.transform = 'translateY(0)';
+    element.style.opacity = '1';
+  }, 10);
+};
+
+export const slideDown = (element, duration = 400) => {
+  if (!element) return;
+  
+  element.style.transform = 'translateY(-100%)';
+  element.style.opacity = '0';
+  element.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+  
+  setTimeout(() => {
+    element.style.transform = 'translateY(0)';
+    element.style.opacity = '1';
+  }, 10);
+};
+
+export const bounce = (element) => {
+  if (!element) return;
+  
+  element.classList.add('ff-bounce');
+  setTimeout(() => {
+    element.classList.remove('ff-bounce');
+  }, 600);
+};
+
+export const pulse = (element) => {
+  if (!element) return;
+  
+  element.classList.add('ff-pulse');
+  setTimeout(() => {
+    element.classList.remove('ff-pulse');
+  }, 1000);
+};
+
+export const spin = (element) => {
+  if (!element) return;
+  
+  element.classList.add('ff-spin');
+};
+
+export const stopSpin = (element) => {
+  if (!element) return;
+  
+  element.classList.remove('ff-spin');
+};
+
+// Animation component
+export const Animated = ({ 
+  children, 
+  animation = 'fadeIn', 
+  duration = 300, 
+  delay = 0,
+  className = '',
+  ...props 
+}) => {
+  useEffect(() => {
+    const element = ref.current;
+    if (element) {
+      // Apply delay if specified
+      setTimeout(() => {
+        switch (animation) {
+          case 'fadeIn':
+            fadeIn(element, duration);
+            break;
+          case 'slideUp':
+            slideUp(element, duration);
+            break;
+          case 'slideDown':
+            slideDown(element, duration);
+            break;
+          case 'bounce':
+            bounce(element);
+            break;
+          case 'pulse':
+            pulse(element);
+            break;
+          default:
+            fadeIn(element, duration);
+        }
+      }, delay);
+    }
+  }, [animation, duration, delay]);
+
+  const ref = useRef(null);
+
+  return (
+    <div ref={ref} className={className} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export default {
+  fadeIn,
+  fadeOut,
+  slideUp,
+  slideDown,
+  bounce,
+  pulse,
+  spin,
+  stopSpin,
+  Animated
+};
+""")
+
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        component_file = components_dir / "Animations.js"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+        # Generate CSS for animations
+        css_content = self.animation_utils.generate_transition_styles()
+        loading_css = self.animation_utils.generate_loading_animations()
+        
+        full_css = css_content + "\n" + loading_css
+        
+        css_file = components_dir / "Animations.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(full_css)
+
+        # Add animation script to index.html
+        index_html_path = self.frontend_path / "index.html"
+        if index_html_path.exists():
+            with open(index_html_path, 'r', encoding='utf-8') as f:
+                index_content = f.read()
+            
+            # Add animation script before closing body tag
+            animation_script = self.animation_utils.generate_animation_script()
+            if "</body>" in index_content:
+                updated_content = index_content.replace(
+                    "</body>", 
+                    f"{animation_script}\n</body>"
+                )
+                
+                with open(index_html_path, 'w', encoding='utf-8') as f:
+                    f.write(updated_content)
+
 
         component_content = template.render()
 
