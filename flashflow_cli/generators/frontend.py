@@ -12,6 +12,7 @@ from jinja2 import Template
 from ..core import FlashFlowProject, FlashFlowIR
 from flashflow_cli.components.slider import SliderComponent
 from flashflow_cli.components.animations import AnimationUtils
+from flashflow_cli.components.micro_interactions import MicroInteractions
 
 class FrontendGenerator:
     """Generates frontend code from FlashFlow IR"""
@@ -25,6 +26,7 @@ class FrontendGenerator:
         # Initialize animation components
         self.slider_component = SliderComponent()
         self.animation_utils = AnimationUtils()
+        self.micro_interactions = MicroInteractions()
 
     def generate(self):
         """Generate complete frontend"""
@@ -5814,6 +5816,9 @@ export default SmartForm;
 
         # Generate help panel component
         self._generate_help_panel_component()
+        
+        # Generate micro-interactions
+        self._generate_micro_interactions()
 
     def _generate_tooltip_component(self):
         """Generate tooltip component for inline help"""
@@ -6277,6 +6282,7 @@ export default ProgressiveDisclosure;
 
 ```
 
+
     def _generate_slider_component(self):
         """Generate slider component with animations"""
         
@@ -6729,6 +6735,168 @@ const SessionTimeout = ({
       console.error('Failed to extend session:', error);
       handleTimeout();
     }
+</original_code>
+
+```
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .progressive-disclosure-content,
+  .disclosure-icon {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .progressive-disclosure-trigger {
+    border-width: 2px;
+  }
+
+  .progressive-disclosure-trigger:focus {
+    border-color: #000;
+    box-shadow: 0 0 0 3px #000;
+  }
+}
+"""
+
+        css_file = components_dir / "ProgressiveDisclosure.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(css_content)
+
+    def _generate_session_timeout_component(self):
+        """Generate session timeout warning component"""
+
+        template = Template("""import React, { useState, useEffect, useCallback } from 'react';
+import './SessionTimeout.css';
+
+const SessionTimeout = ({
+  timeoutMinutes = 30,
+  warningMinutes = 5,
+  onTimeout,
+  onExtend,
+  onWarning,
+  isActive = true
+}) => {
+  const [timeLeft, setTimeLeft] = useState(timeoutMinutes * 60);
+  const [showWarning, setShowWarning] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
+
+  const extendSession = useCallback(async () => {
+    try {
+      // Call API to extend session
+      const response = await fetch('/api/auth/extend-session', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setTimeLeft(timeoutMinutes * 60);
+        setShowWarning(false);
+        setIsIdle(false);
+        onExtend?.();
+      } else {
+        // Session already expired
+        handleTimeout();
+      }
+    } catch (error) {
+      console.error('Failed to extend session:', error);
+      handleTimeout();
+    }
+  }, [timeoutMinutes]);
+
+  const handleTimeout = useCallback(() => {
+    onTimeout?.();
+  }, [onTimeout]);
+
+  useEffect(() => {
+    if (isActive) {
+      const timeoutId = setTimeout(() => {
+        if (isIdle) {
+          handleTimeout();
+        } else {
+          setShowWarning(true);
+          onWarning?.();
+        }
+      }, (timeoutMinutes - warningMinutes) * 60 * 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isActive, timeoutMinutes, warningMinutes, isIdle, handleTimeout, onWarning]);
+
+  useEffect(() => {
+    if (isActive) {
+      const intervalId = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime <= 1) {
+            handleTimeout();
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [isActive, handleTimeout]);
+
+  return (
+    <div className="session-timeout">
+      {showWarning && (
+        <div className="session-timeout-warning">
+          Your session will expire in {timeLeft} seconds. Do you want to extend it?
+          <button onClick={extendSession}>Extend session</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SessionTimeout;
+
+""")
+
+        js_file = components_dir / "SessionTimeout.js"
+        with open(js_file, 'w', encoding='utf-8') as f:
+            f.write(template.render())
+
+    def _generate_micro_interactions(self):
+        """Generate micro-interactions components"""
+        
+        # Generate micro-interactions CSS
+        self._generate_micro_interactions_css()
+        
+        # Generate micro-interactions JavaScript
+        self._generate_micro_interactions_js()
+        
+    def _generate_micro_interactions_css(self):
+        """Generate CSS for micro-interactions"""
+        
+        css_content = self.micro_interactions.generate_css()
+        
+        # Write to styles directory
+        styles_dir = self.frontend_path / "src" / "styles"
+        styles_dir.mkdir(parents=True, exist_ok=True)
+        
+        css_file = styles_dir / "micro-interactions.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(css_content)
+            
+    def _generate_micro_interactions_js(self):
+        """Generate JavaScript for micro-interactions"""
+        
+        js_content = self.micro_interactions.generate_javascript()
+        
+        # Write to utils directory
+        utils_dir = self.frontend_path / "src" / "utils"
+        utils_dir.mkdir(parents=True, exist_ok=True)
+        
+        js_file = utils_dir / "micro-interactions.js"
+        with open(js_file, 'w', encoding='utf-8') as f:
+            f.write(js_content)
+
   }, [timeoutMinutes, onExtend]);
 
   const handleTimeout = useCallback(() => {
