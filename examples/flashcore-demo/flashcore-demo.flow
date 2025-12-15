@@ -1,0 +1,40 @@
+page:
+  path: /flashcore-demo
+  title: FlashCore Demo
+  body:
+    - component: header
+      content: FlashCore Integration Demo
+      
+    - component: text
+      content: |
+        This page demonstrates the integration of FlashCore with the FlashFlow Engine.
+        FlashCore provides high-performance vector search, ML inference, and encryption capabilities.
+        
+    - component: flashcore_demo
+      title: Vector Search Demo
+      demo_type: vector_search
+      
+    - component: flashcore_demo
+      title: ML Inference Demo
+      demo_type: inference
+      
+    - component: flashcore_demo
+      title: Encryption Demo
+      demo_type: encryption
+      
+    - component: features
+      items:
+        - title: High-Performance Vector Search
+          description: |
+            FlashCore's HNSW index provides fast similarity search for recommendation systems,
+            semantic search, and other AI applications.
+            
+        - title: Native ML Inference
+          description: |
+            FlashCore's ONNX runtime delivers fast machine learning inference without
+            the overhead of Python wrappers.
+            
+        - title: Secure Data Protection
+          description: |
+            FlashCore's AES-256 encryption ensures your data is protected both at rest
+            and in transit.

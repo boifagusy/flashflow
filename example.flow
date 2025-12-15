@@ -1,0 +1,88 @@
+model:
+  name: User
+  fields:
+    name: string required
+    email: string required unique
+    role: string enum:admin,user default:user
+    created_at: datetime
+    notification_preferences: json
+
+model:
+  name: Product
+  fields:
+    name: string required
+    price: decimal required
+    description: text
+    category: string enum:electronics,clothing,books
+    in_stock: boolean default:true
+
+model:
+  name: UserActivity
+  fields:
+    user_id: integer references User.id
+    activity_type: string required
+    page_url: string
+    metadata: json
+    timestamp: datetime
+    session_id: string
+
+model:
+  name: Notification
+  fields:
+    user_id: integer references User.id
+    title: string required
+    message: text required
+    type: string enum:info,warning,success,error
+    channel: string enum:in_app,email,push,sms
+    status: string enum:pending,sent,delivered,read default:pending
+    priority: string enum:low,normal,high,urgent default:normal
+    created_at: datetime
+    sent_at: datetime
+    read_at: datetime
+
+page Dashboard {
+  title: "User Dashboard with Notifications"
+  route: "/dashboard"
+  
+  # Header with notification bell
+  header {
+    row {
+      text "Dashboard" style="font-size: 24px; font-weight: bold;"
+      notification_bell {
+        user_id: current_user.id
+      }
+    }
+  }
+  
+  # Main content
+  section "Welcome" {
+    text "Welcome to your dashboard!"
+  }
+  
+  # Notification settings section
+  section "Notification Settings" {
+    text "Manage your notification preferences:"
+    notification_settings {
+      user_id: current_user.id
+    }
+  }
+  
+  # Countdown timer section
+  section "Countdown Timer" {
+    text "Set a timer for tasks or reminders:"
+    countdown_timer {
+      title: "Task Timer"
+      duration: 60
+      on_complete: "notify_user_timer_complete"
+    }
+  }
+  
+  # Timer manager section
+  section "Timer Manager" {
+    text "Manage persistent timers with storage:"
+    timer_manager {
+      user_id: current_user.id
+      on_notification: "handle_timer_notification"
+    }
+  }
+}

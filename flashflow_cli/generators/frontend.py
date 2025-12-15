@@ -5975,6 +5975,7 @@ const Tooltip = ({
 };
 
 export default Tooltip;
+
 """)
 
         component_content = template.render()
@@ -5985,97 +5986,78 @@ export default Tooltip;
             f.write(component_content)
 
         # Generate CSS for tooltip
-        css_content = """.tooltip-trigger {
-  display: inline-block;
-  cursor: help;
-}
-
-.tooltip {
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
+        css_content = """.tooltip {
+  position: absolute;
+  background-color: #2d3748;
+  color: #ffffff;
   padding: 8px 12px;
   border-radius: 6px;
-  font-size: 14px;
-  line-height: 1.4;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  line-height: 1.2;
   pointer-events: none;
-  opacity: 0;
-  animation: tooltipFadeIn 0.2s ease-out forwards;
+  z-index: 9999;
 }
 
-.tooltip-content {
-  position: relative;
-  z-index: 1;
-}
-
-.tooltip-arrow {
+.tooltip::after {
+  content: '';
   position: absolute;
   width: 0;
   height: 0;
-  border: 6px solid transparent;
+  border-style: solid;
 }
 
-.tooltip--top .tooltip-arrow {
-  bottom: -12px;
+.tooltip--top::after {
+  bottom: -4px;
   left: 50%;
-  transform: translateX(-50%);
-  border-top-color: rgba(0, 0, 0, 0.9);
+  margin-left: -4px;
+  border-width: 4px 4px 0;
+  border-color: #2d3748 transparent transparent transparent;
 }
 
-.tooltip--bottom .tooltip-arrow {
-  top: -12px;
+.tooltip--bottom::after {
+  top: -4px;
   left: 50%;
-  transform: translateX(-50%);
-  border-bottom-color: rgba(0, 0, 0, 0.9);
+  margin-left: -4px;
+  border-width: 0 4px 4px;
+  border-color: transparent transparent #2d3748 transparent;
 }
 
-.tooltip--left .tooltip-arrow {
-  right: -12px;
+.tooltip--left::after {
   top: 50%;
-  transform: translateY(-50%);
-  border-left-color: rgba(0, 0, 0, 0.9);
+  right: -4px;
+  margin-top: -4px;
+  border-width: 4px 4px 4px 0;
+  border-color: transparent #2d3748 transparent transparent;
 }
 
-.tooltip--right .tooltip-arrow {
-  left: -12px;
+.tooltip--right::after {
   top: 50%;
-  transform: translateY(-50%);
-  border-right-color: rgba(0, 0, 0, 0.9);
+  left: -4px;
+  margin-top: -4px;
+  border-width: 4px 0 4px 4px;
+  border-color: transparent transparent transparent #2d3748;
 }
 
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+/* Responsive */
+@media (max-width: 768px) {
+  .tooltip {
+    padding: 6px 10px;
+    font-size: 11px;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
   }
 }
 
-/* Light theme variant */
-.tooltip--light {
-  background: white;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.tooltip--light.tooltip--top .tooltip-arrow {
-  border-top-color: white;
-}
-
-.tooltip--light.tooltip--bottom .tooltip-arrow {
-  border-bottom-color: white;
-}
-
-.tooltip--light.tooltip--left .tooltip-arrow {
-  border-left-color: white;
-}
-
-.tooltip--light.tooltip--right .tooltip-arrow {
-  border-right-color: white;
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .tooltip {
+    border: 1px solid #000;
+  }
 }
 """
 
@@ -6084,123 +6066,51 @@ export default Tooltip;
             f.write(css_content)
 
     def _generate_progressive_disclosure_component(self):
-        """Generate progressive disclosure component to hide/show advanced fields"""
+        """Generate progressive disclosure component for advanced form fields"""
 
-        template = Template("""import React, { useState, useRef, useEffect } from 'react';
+        template = Template("""import React, { useState } from 'react';
 import './ProgressiveDisclosure.css';
 
 const ProgressiveDisclosure = ({
-  trigger,
+  title,
   children,
   defaultOpen = false,
-  animationDuration = 300,
   className = '',
-  onToggle
+  triggerClassName = '',
+  contentClassName = ''
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [height, setHeight] = useState(defaultOpen ? 'auto' : 0);
-  const contentRef = useRef(null);
 
-  const toggle = () => {
-    const newState = !isOpen;
-    setIsOpen(newState);
-    onToggle?.(newState);
-
-    if (contentRef.current) {
-      if (newState) {
-        // Opening
-        const scrollHeight = contentRef.current.scrollHeight;
-        setHeight(scrollHeight);
-
-        // Set to auto after animation for responsive behavior
-        setTimeout(() => {
-          if (contentRef.current) {
-            setHeight('auto');
-          }
-        }, animationDuration);
-      } else {
-        // Closing
-        const scrollHeight = contentRef.current.scrollHeight;
-        setHeight(scrollHeight);
-
-        // Force reflow then set to 0
-        setTimeout(() => {
-          setHeight(0);
-        }, 10);
-      }
-    }
+  const toggleOpen = () => {
+    setIsOpen(!isOpen);
   };
-
-  useEffect(() => {
-    if (isOpen && contentRef.current) {
-      const resizeObserver = new ResizeObserver(() => {
-        if (height === 'auto') {
-          // Content size changed, keep auto height
-          return;
-        }
-      });
-
-      resizeObserver.observe(contentRef.current);
-
-      return () => {
-        resizeObserver.disconnect();
-      };
-    }
-  }, [isOpen, height]);
 
   return (
     <div className={`progressive-disclosure ${className}`}>
-      <div
-        className="progressive-disclosure-trigger"
-        onClick={toggle}
+      <div 
+        className={`progressive-disclosure-trigger ${triggerClassName}`}
+        onClick={toggleOpen}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            toggle();
+            toggleOpen();
           }
         }}
       >
-        {typeof trigger === 'function' ? trigger(isOpen) : trigger}
+        <span className="advanced-fields-trigger">{title}</span>
         <span className={`disclosure-icon ${isOpen ? 'disclosure-icon--open' : ''}`}>
-          ▶️
+          ▶
         </span>
       </div>
-
-      <div
-        ref={contentRef}
-        className="progressive-disclosure-content"
-        style={{
-          height: height === 'auto' ? 'auto' : `${height}px`,
-          transition: `height ${animationDuration}ms ease-in-out`,
-          overflow: height === 'auto' ? 'visible' : 'hidden'
-        }}
-      >
+      
+      <div className={`progressive-disclosure-content ${contentClassName}`}>
         <div className="progressive-disclosure-inner">
-          {children}
+          {isOpen && children}
         </div>
       </div>
     </div>
-  );
-};
-
-// Advanced Fields Wrapper Component
-export const AdvancedFields = ({ children, label = 'Advanced Options', ...props }) => {
-  return (
-    <ProgressiveDisclosure
-      trigger={(isOpen) => (
-        <span className="advanced-fields-trigger">
-          {isOpen ? 'Hide' : 'Show'} {label}
-        </span>
-      )}
-      className="advanced-fields"
-      {...props}
-    >
-      <div className="advanced-fields-content">
-        {children}
-      </div>
-    </ProgressiveDisclosure>
   );
 };
 
@@ -6210,365 +6120,8 @@ export default ProgressiveDisclosure;
         component_content = template.render()
 
         components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "ProgressiveDisclosure.jsx"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for progressive disclosure
-        css_content = """.progressive-disclosure-trigger {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-  color: var(--primary-color, #3b82f6);
-}
-
-.progressive-disclosure-trigger:hover {
-  color: var(--primary-color-dark, #2563eb);
-}
-
-.progressive-disclosure-trigger:focus {
-  outline: 2px solid var(--primary-color, #3b82f6);
-  outline-offset: 2px;
-}
-
-.progressive-disclosure-trigger:focus-visible {
-  outline: 2px solid var(--primary-color, #3b82f6);
-  outline-offset: 2px;
-}
-
-.disclosure-icon {
-  transition: transform 0.2s ease;
-}
-
-.disclosure-icon--open {
-  transform: rotate(90deg);
-}
-
-.progressive-disclosure-content {
-  margin-top: 8px;
-}
-
-.advanced-fields-trigger {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.advanced-fields-trigger:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.advanced-fields-content {
-  margin-top: 12px;
-  padding-left: 16px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .progressive-disclosure-trigger {
-    font-size: 16px;
-  }
-
-  .advanced-fields-trigger {
-    font-size: 14px;
-  }
-}
-
-```
-
-
-    def _generate_slider_component(self):
-        """Generate slider component with animations"""
+        components_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create slider component file
-        template = Template("""import React, { useState, useEffect } from 'react';
-import './Slider.css';
-
-const Slider = ({
-  min = 0,
-  max = 100,
-  initialValue = 50,
-  step = 1,
-  animationType = 'slide',
-  animationDuration = 300,
-  onChange,
-  id = 'slider',
-  className = '',
-  showValue = true
-}) => {
-  const [value, setValue] = useState(initialValue);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    if (onChange) {
-      onChange(value);
-    }
-  }, [value, onChange]);
-
-  const handleChange = (e) => {
-    const newValue = parseInt(e.target.value);
-    setIsAnimating(true);
-    
-    // Apply animation class
-    const slider = e.target;
-    slider.classList.add('animating');
-    
-    setTimeout(() => {
-      slider.classList.remove('animating');
-      setIsAnimating(false);
-    }, animationDuration);
-    
-    setValue(newValue);
-  };
-
-  const handleMouseUp = (e) => {
-    // Add bounce effect on release
-    const slider = e.target;
-    slider.classList.add('bounce');
-    
-    setTimeout(() => {
-      slider.classList.remove('bounce');
-    }, 500);
-  };
-
-  return (
-    <div className={`flashflow-slider-container ${className}`}>
-      <input
-        type="range"
-        id={id}
-        className={`flashflow-slider ${animationType}-animation ${isAnimating ? 'animating' : ''}`}
-        min={min}
-        max={max}
-        value={value}
-        step={step}
-        onChange={handleChange}
-        onMouseUp={handleMouseUp}
-        data-animation-type={animationType}
-        data-animation-duration={animationDuration}
-      />
-      {showValue && (
-        <div className="flashflow-slider-value" id={`${id}-value`}>
-          {value}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Slider;
-""")
-
-        component_content = template.render()
-
-        components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "Slider.jsx"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for slider
-        css_content = self.slider_component.generate_css()
-        
-        css_file = components_dir / "Slider.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(css_content)
-
-    def _generate_animation_utilities(self):
-        """Generate animation utilities for frontend"""
-        
-        # Create animation utilities file
-        template = Template("""import React from 'react';
-import './Animations.css';
-
-// Animation utility functions
-export const fadeIn = (element, duration = 300) => {
-  if (!element) return;
-  
-  element.style.opacity = '0';
-  element.style.transform = 'translateY(10px)';
-  element.style.transition = `opacity ${duration}ms ease-in-out, transform ${duration}ms ease-in-out`;
-  
-  setTimeout(() => {
-    element.style.opacity = '1';
-    element.style.transform = 'translateY(0)';
-  }, 10);
-};
-
-export const fadeOut = (element, duration = 300, callback = null) => {
-  if (!element) return;
-  
-  element.style.opacity = '1';
-  element.style.transform = 'translateY(0)';
-  element.style.transition = `opacity ${duration}ms ease-in-out, transform ${duration}ms ease-in-out`;
-  
-  setTimeout(() => {
-    element.style.opacity = '0';
-    element.style.transform = 'translateY(10px)';
-    
-    if (callback) {
-      setTimeout(callback, duration);
-    }
-  }, 10);
-};
-
-export const slideUp = (element, duration = 400) => {
-  if (!element) return;
-  
-  element.style.transform = 'translateY(100%)';
-  element.style.opacity = '0';
-  element.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
-  
-  setTimeout(() => {
-    element.style.transform = 'translateY(0)';
-    element.style.opacity = '1';
-  }, 10);
-};
-
-export const slideDown = (element, duration = 400) => {
-  if (!element) return;
-  
-  element.style.transform = 'translateY(-100%)';
-  element.style.opacity = '0';
-  element.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
-  
-  setTimeout(() => {
-    element.style.transform = 'translateY(0)';
-    element.style.opacity = '1';
-  }, 10);
-};
-
-export const bounce = (element) => {
-  if (!element) return;
-  
-  element.classList.add('ff-bounce');
-  setTimeout(() => {
-    element.classList.remove('ff-bounce');
-  }, 600);
-};
-
-export const pulse = (element) => {
-  if (!element) return;
-  
-  element.classList.add('ff-pulse');
-  setTimeout(() => {
-    element.classList.remove('ff-pulse');
-  }, 1000);
-};
-
-export const spin = (element) => {
-  if (!element) return;
-  
-  element.classList.add('ff-spin');
-};
-
-export const stopSpin = (element) => {
-  if (!element) return;
-  
-  element.classList.remove('ff-spin');
-};
-
-// Animation component
-export const Animated = ({ 
-  children, 
-  animation = 'fadeIn', 
-  duration = 300, 
-  delay = 0,
-  className = '',
-  ...props 
-}) => {
-  useEffect(() => {
-    const element = ref.current;
-    if (element) {
-      // Apply delay if specified
-      setTimeout(() => {
-        switch (animation) {
-          case 'fadeIn':
-            fadeIn(element, duration);
-            break;
-          case 'slideUp':
-            slideUp(element, duration);
-            break;
-          case 'slideDown':
-            slideDown(element, duration);
-            break;
-          case 'bounce':
-            bounce(element);
-            break;
-          case 'pulse':
-            pulse(element);
-            break;
-          default:
-            fadeIn(element, duration);
-        }
-      }, delay);
-    }
-  }, [animation, duration, delay]);
-
-  const ref = useRef(null);
-
-  return (
-    <div ref={ref} className={className} {...props}>
-      {children}
-    </div>
-  );
-};
-
-export default {
-  fadeIn,
-  fadeOut,
-  slideUp,
-  slideDown,
-  bounce,
-  pulse,
-  spin,
-  stopSpin,
-  Animated
-};
-""")
-
-        component_content = template.render()
-
-        components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "Animations.js"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for animations
-        css_content = self.animation_utils.generate_transition_styles()
-        loading_css = self.animation_utils.generate_loading_animations()
-        
-        full_css = css_content + "\n" + loading_css
-        
-        css_file = components_dir / "Animations.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(full_css)
-
-        # Add animation script to index.html
-        index_html_path = self.frontend_path / "index.html"
-        if index_html_path.exists():
-            with open(index_html_path, 'r', encoding='utf-8') as f:
-                index_content = f.read()
-            
-            # Add animation script before closing body tag
-            animation_script = self.animation_utils.generate_animation_script()
-            if "</body>" in index_content:
-                updated_content = index_content.replace(
-                    "</body>", 
-                    f"{animation_script}\n</body>"
-                )
-                
-                with open(index_html_path, 'w', encoding='utf-8') as f:
-                    f.write(updated_content)
-
-
-        component_content = template.render()
-
-        components_dir = self.frontend_path / "src" / "components"
         component_file = components_dir / "ProgressiveDisclosure.jsx"
         with open(component_file, 'w', encoding='utf-8') as f:
             f.write(component_content)
@@ -6668,6 +6221,22 @@ export default {
   }
 }
 
+.advanced-fields-content {
+  margin-top: 12px;
+  padding-left: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .progressive-disclosure-trigger {
+    font-size: 16px;
+  }
+
+  .advanced-fields-trigger {
+    font-size: 14px;
+  }
+}
+
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   .progressive-disclosure-content,
@@ -6696,7 +6265,7 @@ export default {
     def _generate_session_timeout_component(self):
         """Generate session timeout warning component"""
 
-        template = Template("""import React, { useState, useEffect, useCallback } from 'react';
+        template = Template("""import React, { useState, useEffect } from 'react';
 import './SessionTimeout.css';
 
 const SessionTimeout = ({
@@ -6709,125 +6278,30 @@ const SessionTimeout = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState(timeoutMinutes * 60);
   const [showWarning, setShowWarning] = useState(false);
-  const [isIdle, setIsIdle] = useState(false);
 
-  const extendSession = useCallback(async () => {
-    try {
-      // Call API to extend session
-      const response = await fetch('/api/auth/extend-session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+  const extendSession = () => {
+    setTimeLeft(timeoutMinutes * 60);
+    setShowWarning(false);
+    onExtend?.();
+  };
 
-      if (response.ok) {
-        setTimeLeft(timeoutMinutes * 60);
-        setShowWarning(false);
-        setIsIdle(false);
-        onExtend?.();
-      } else {
-        // Session already expired
-        handleTimeout();
-      }
-    } catch (error) {
-      console.error('Failed to extend session:', error);
-      handleTimeout();
-    }
-</original_code>
-
-```
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .progressive-disclosure-content,
-  .disclosure-icon {
-    transition: none;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .progressive-disclosure-trigger {
-    border-width: 2px;
-  }
-
-  .progressive-disclosure-trigger:focus {
-    border-color: #000;
-    box-shadow: 0 0 0 3px #000;
-  }
-}
-"""
-
-        css_file = components_dir / "ProgressiveDisclosure.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(css_content)
-
-    def _generate_session_timeout_component(self):
-        """Generate session timeout warning component"""
-
-        template = Template("""import React, { useState, useEffect, useCallback } from 'react';
-import './SessionTimeout.css';
-
-const SessionTimeout = ({
-  timeoutMinutes = 30,
-  warningMinutes = 5,
-  onTimeout,
-  onExtend,
-  onWarning,
-  isActive = true
-}) => {
-  const [timeLeft, setTimeLeft] = useState(timeoutMinutes * 60);
-  const [showWarning, setShowWarning] = useState(false);
-  const [isIdle, setIsIdle] = useState(false);
-
-  const extendSession = useCallback(async () => {
-    try {
-      // Call API to extend session
-      const response = await fetch('/api/auth/extend-session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setTimeLeft(timeoutMinutes * 60);
-        setShowWarning(false);
-        setIsIdle(false);
-        onExtend?.();
-      } else {
-        // Session already expired
-        handleTimeout();
-      }
-    } catch (error) {
-      console.error('Failed to extend session:', error);
-      handleTimeout();
-    }
-  }, [timeoutMinutes]);
-
-  const handleTimeout = useCallback(() => {
+  const handleTimeout = () => {
     onTimeout?.();
-  }, [onTimeout]);
+  };
 
   useEffect(() => {
     if (isActive) {
       const timeoutId = setTimeout(() => {
-        if (isIdle) {
-          handleTimeout();
-        } else {
-          setShowWarning(true);
-          onWarning?.();
-        }
+        setShowWarning(true);
+        onWarning?.();
       }, (timeoutMinutes - warningMinutes) * 60 * 1000);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isActive, timeoutMinutes, warningMinutes, isIdle, handleTimeout, onWarning]);
+  }, [isActive, timeoutMinutes, warningMinutes, onWarning]);
 
   useEffect(() => {
-    if (isActive) {
+    if (isActive && showWarning) {
       const intervalId = setInterval(() => {
         setTimeLeft((prevTime) => {
           if (prevTime <= 1) {
@@ -6840,14 +6314,17 @@ const SessionTimeout = ({
 
       return () => clearInterval(intervalId);
     }
-  }, [isActive, handleTimeout]);
+  }, [isActive, showWarning, handleTimeout]);
 
   return (
     <div className="session-timeout">
       {showWarning && (
         <div className="session-timeout-warning">
-          Your session will expire in {timeLeft} seconds. Do you want to extend it?
-          <button onClick={extendSession}>Extend session</button>
+          <p>Your session will expire in {timeLeft} seconds. Do you want to extend it?</p>
+          <div className="session-timeout-buttons">
+            <button onClick={extendSession} className="btn btn-primary">Extend session</button>
+            <button onClick={handleTimeout} className="btn btn-secondary">Logout</button>
+          </div>
         </div>
       )}
     </div>
@@ -6855,12 +6332,414 @@ const SessionTimeout = ({
 };
 
 export default SessionTimeout;
-
 """)
 
-        js_file = components_dir / "SessionTimeout.js"
-        with open(js_file, 'w', encoding='utf-8') as f:
-            f.write(template.render())
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        components_dir.mkdir(parents=True, exist_ok=True)
+        
+        component_file = components_dir / "SessionTimeout.jsx"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+    def _generate_quick_login_component(self):
+        """Generate quick login component for authentication"""
+
+        template = Template("""import React, { useState } from 'react';
+import './QuickLogin.css';
+
+const QuickLogin = ({ onLogin, isLoading = false }) => {
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setCredentials(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onLogin?.(credentials);
+  };
+
+  return (
+    <div className="quick-login">
+      <form onSubmit={handleSubmit} className="quick-login-form">
+        <div className="form-group">
+          <input
+            type="email"
+            name="email"
+            value={credentials.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="form-control"
+            required
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="password"
+            name="password"
+            value={credentials.password}
+            onChange={handleChange}
+            placeholder="Password"
+            className="form-control"
+            required
+          />
+        </div>
+        <button 
+          type="submit" 
+          className="btn btn-primary quick-login-btn"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default QuickLogin;
+""")
+
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        components_dir.mkdir(parents=True, exist_ok=True)
+        
+        component_file = components_dir / "QuickLogin.jsx"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+        # Generate CSS for quick login
+        css_content = """.quick-login {
+  max-width: 350px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.quick-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-control {
+  padding: 12px 16px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #4299e1;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #3182ce;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #718096;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #4a5568;
+}
+
+.quick-login-btn {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .quick-login {
+    padding: 16px;
+  }
+  
+  .form-control {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+"""
+
+        css_file = components_dir / "QuickLogin.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(css_content)
+
+    def _generate_help_panel_component(self):
+        """Generate help panel component for contextual assistance"""
+
+        template = Template("""import React, { useState } from 'react';
+import './HelpPanel.css';
+
+const HelpPanel = ({ 
+  title = "Help", 
+  content, 
+  position = "bottom-right",
+  className = ""
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const toggleHelp = () => {
+    setIsVisible(!isVisible);
+  };
+
+  const getPositionClasses = () => {
+    const positions = {
+      'top-left': 'help-panel--top-left',
+      'top-right': 'help-panel--top-right',
+      'bottom-left': 'help-panel--bottom-left',
+      'bottom-right': 'help-panel--bottom-right'
+    };
+    return positions[position] || positions['bottom-right'];
+  };
+
+  return (
+    <div className={`help-panel ${getPositionClasses()} ${className}`}>
+      <button 
+        className="help-panel-toggle"
+        onClick={toggleHelp}
+        aria-label="Toggle help"
+      >
+        ?
+      </button>
+      
+      {isVisible && (
+        <div className="help-panel-content">
+          <div className="help-panel-header">
+            <h3>{title}</h3>
+            <button 
+              className="help-panel-close"
+              onClick={toggleHelp}
+              aria-label="Close help"
+            >
+              ×
+            </button>
+          </div>
+          <div className="help-panel-body">
+            {typeof content === 'string' ? (
+              <p dangerouslySetInnerHTML={{ __html: content }} />
+            ) : (
+              content
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HelpPanel;
+""")
+
+        component_content = template.render()
+
+        components_dir = self.frontend_path / "src" / "components"
+        components_dir.mkdir(parents=True, exist_ok=True)
+        
+        component_file = components_dir / "HelpPanel.jsx"
+        with open(component_file, 'w', encoding='utf-8') as f:
+            f.write(component_content)
+
+        # Generate CSS for help panel
+        css_content = """.help-panel {
+  position: fixed;
+  z-index: 1000;
+}
+
+.help-panel--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.help-panel--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.help-panel--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.help-panel--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.help-panel-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.help-panel-toggle:hover {
+  background-color: #3182ce;
+  transform: scale(1.1);
+}
+
+.help-panel-content {
+  position: absolute;
+  width: 300px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-panel--top-left .help-panel-content {
+  top: 50px;
+  left: 0;
+}
+
+.help-panel--top-right .help-panel-content {
+  top: 50px;
+  right: 0;
+}
+
+.help-panel--bottom-left .help-panel-content {
+  bottom: 50px;
+  left: 0;
+}
+
+.help-panel--bottom-right .help-panel-content {
+  bottom: 50px;
+  right: 0;
+}
+
+.help-panel-header {
+  padding: 16px;
+  background-color: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2d3748;
+}
+
+.help-panel-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #a0aec0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.help-panel-close:hover {
+  background-color: #edf2f7;
+  color: #4a5568;
+}
+
+.help-panel-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.help-panel-body p {
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  color: #4a5568;
+}
+
+.help-panel-body p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .help-panel-content {
+    width: 280px;
+    max-height: 70vh;
+  }
+  
+  .help-panel--top-left,
+  .help-panel--top-right {
+    top: 10px;
+  }
+  
+  .help-panel--bottom-left,
+  .help-panel--bottom-right {
+    bottom: 10px;
+  }
+  
+  .help-panel--top-left .help-panel-content,
+  .help-panel--top-right .help-panel-content {
+    top: 40px;
+  }
+  
+  .help-panel--bottom-left .help-panel-content,
+  .help-panel--bottom-right .help-panel-content {
+    bottom: 40px;
+  }
+}
+"""
+
+        css_file = components_dir / "HelpPanel.css"
+        with open(css_file, 'w', encoding='utf-8') as f:
+            f.write(css_content)
 
     def _generate_micro_interactions(self):
         """Generate micro-interactions components"""
@@ -6870,6 +6749,9 @@ export default SessionTimeout;
         
         # Generate micro-interactions JavaScript
         self._generate_micro_interactions_js()
+        
+        # Generate page loading animation component
+        self._generate_page_loading_component()
         
     def _generate_micro_interactions_css(self):
         """Generate CSS for micro-interactions"""
@@ -6897,1322 +6779,26 @@ export default SessionTimeout;
         with open(js_file, 'w', encoding='utf-8') as f:
             f.write(js_content)
 
-  }, [timeoutMinutes, onExtend]);
-
-  const handleTimeout = useCallback(() => {
-    setShowWarning(false);
-    localStorage.removeItem('auth_token');
-    onTimeout?.();
-    // Redirect to login
-    window.location.href = '/login?reason=session_expired';
-  }, [onTimeout]);
-
-  const resetTimer = useCallback(() => {
-    if (isActive) {
-      setTimeLeft(timeoutMinutes * 60);
-      setShowWarning(false);
-      setIsIdle(false);
-    }
-  }, [timeoutMinutes, isActive]);
-
-  // Activity detection
-  useEffect(() => {
-    if (!isActive) return;
-
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-
-    const handleActivity = () => {
-      if (!showWarning) {
-        resetTimer();
-      }
-    };
-
-    events.forEach(event => {
-      document.addEventListener(event, handleActivity, true);
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleActivity, true);
-      });
-    };
-  }, [resetTimer, showWarning, isActive]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (!isActive) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const newTime = prev - 1;
-
-        if (newTime <= 0) {
-          handleTimeout();
-          return 0;
-        }
-
-        // Show warning when time is low
-        if (newTime <= warningMinutes * 60 && !showWarning) {
-          setShowWarning(true);
-          setIsIdle(true);
-          onWarning?.(newTime);
-        }
-
-        return newTime;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [warningMinutes, showWarning, handleTimeout, onWarning, isActive]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  if (!isActive || !showWarning) {
-    return null;
-  }
-
-  return (
-    <div className="session-timeout-overlay">
-      <div className="session-timeout-modal">
-        <div className="session-timeout-header">
-          <h3>Session Expiring Soon</h3>
-          <div className="timeout-icon">⏰</div>
-        </div>
-
-        <div className="session-timeout-content">
-          <p>
-            Your session will expire in <strong>{formatTime(timeLeft)}</strong>.
-          </p>
-          <p>
-            You will be automatically logged out for security reasons.
-          </p>
-        </div>
-
-        <div className="session-timeout-progress">
-          <div
-            className="timeout-progress-bar"
-            style={{
-              width: `${(timeLeft / (warningMinutes * 60)) * 100}%`
-            }}
-          />
-        </div>
-
-        <div className="session-timeout-actions">
-          <button
-            className="btn btn-primary"
-            onClick={extendSession}
-          >
-            Stay Logged In
-          </button>
-
-          <button
-            className="btn btn-secondary"
-            onClick={handleTimeout}
-          >
-            Logout Now
-          </button>
-        </div>
-
-        <div className="session-timeout-info">
-          <small>
-            Click anywhere or press any key to extend your session automatically.
-          </small>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default SessionTimeout;
-""")
-
-        component_content = template.render()
-
+    def _generate_page_loading_component(self):
+        """Generate page loading animation component"""
+        
+        # Generate default page loading animation (spinner variant)
+        page_loading_html = self.micro_interactions.generate_page_loading_animation(
+            "page-loading-overlay", 
+            "spinner", 
+            "Loading your content..."
+        )
+        
+        # Write to components directory
         components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "SessionTimeout.jsx"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for session timeout
-        css_content = """.session-timeout-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  backdrop-filter: blur(4px);
-}
-
-.session-timeout-modal {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 400px;
-  width: 90vw;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: sessionTimeoutFadeIn 0.3s ease-out;
-}
-
-.session-timeout-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.session-timeout-header h3 {
-  margin: 0;
-  color: #e53e3e;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.timeout-icon {
-  font-size: 24px;
-  opacity: 0.8;
-}
-
-.session-timeout-content {
-  margin-bottom: 20px;
-  color: #4a5568;
-  line-height: 1.5;
-}
-
-.session-timeout-content p {
-  margin: 0 0 8px 0;
-}
-
-.session-timeout-content strong {
-  color: #e53e3e;
-  font-weight: 600;
-}
-
-.session-timeout-progress {
-  width: 100%;
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-
-.timeout-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%);
-  transition: width 1s ease-out;
-  border-radius: 3px;
-}
-
-.session-timeout-actions {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.session-timeout-actions .btn {
-  flex: 1;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.session-timeout-actions .btn-primary {
-  background: #4299e1;
-  color: white;
-}
-
-.session-timeout-actions .btn-primary:hover {
-  background: #3182ce;
-}
-
-.session-timeout-actions .btn-secondary {
-  background: #e2e8f0;
-  color: #4a5568;
-}
-
-.session-timeout-actions .btn-secondary:hover {
-  background: #cbd5e0;
-}
-
-.session-timeout-info {
-  text-align: center;
-  color: #718096;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-@keyframes sessionTimeoutFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .session-timeout-modal {
-    padding: 20px;
-    margin: 16px;
-  }
-
-  .session-timeout-actions {
-    flex-direction: column;
-  }
-
-  .session-timeout-actions .btn {
-    width: 100%;
-  }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .session-timeout-modal {
-    animation: none;
-  }
-
-  .timeout-progress-bar {
-    transition: none;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .session-timeout-modal {
-    border: 2px solid #000;
-  }
-
-  .session-timeout-actions .btn {
-    border: 1px solid #000;
-  }
-}
-"""
-
-        css_file = components_dir / "SessionTimeout.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(css_content)
-
-    def _generate_quick_login_component(self):
-        """Generate quick login component with OTP"""
-
-        template = Template("""import React, { useState } from 'react';
-import SmartOtpInput from './SmartOtpInput';
-import './QuickLogin.css';
-
-const QuickLogin = ({
-  onSuccess,
-  onError,
-  onCancel,
-  defaultMethod = 'email',
-  allowedMethods = ['email', 'phone'],
-  className = ''
-}) => {
-  const [step, setStep] = useState('method'); // method, code, success
-  const [method, setMethod] = useState(defaultMethod);
-  const [identifier, setIdentifier] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  const sendOTP = async (retryIdentifier = identifier) => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          method,
-          identifier: retryIdentifier
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep('code');
-        setResendCooldown(60); // 60 second cooldown
-
-        // Start countdown
-        const countdown = setInterval(() => {
-          setResendCooldown(prev => {
-            if (prev <= 1) {
-              clearInterval(countdown);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        setError(data.message || 'Failed to send verification code');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const verifyOTP = async (otp) => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          method,
-          identifier,
-          otp
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep('success');
-        localStorage.setItem('auth_token', data.token);
-
-        setTimeout(() => {
-          onSuccess?.(data);
-        }, 1000);
-      } else {
-        setError(data.message || 'Invalid verification code');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleMethodSubmit = (e) => {
-    e.preventDefault();
-    if (!identifier.trim()) {
-      setError(`Please enter your ${method}`);
-      return;
-    }
-    sendOTP();
-  };
-
-  const formatIdentifier = (value) => {
-    if (method === 'phone') {
-      // Basic phone formatting
-      const cleaned = value.replace(/\\D/g, '');
-      if (cleaned.length >= 6) {
-        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-      } else if (cleaned.length >= 3) {
-        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-      }
-      return cleaned;
-    }
-    return value;
-  };
-
-  return (
-    <div className={`quick-login ${className}`}>
-      <div className="quick-login-header">
-        <h3>Quick Login</h3>
-        <p>Get instant access with a verification code</p>
-      </div>
-
-      {error && (
-        <div className="quick-login-error">
-          {error}
-        </div>
-      )}
-
-      {step === 'method' && (
-        <form onSubmit={handleMethodSubmit} className="quick-login-form">
-          {allowedMethods.length > 1 && (
-            <div className="method-selector">
-              {allowedMethods.map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  className={`method-btn ${method === m ? 'method-btn--active' : ''}`}
-                  onClick={() => setMethod(m)}
-                >
-                  {m === 'email' ? '📧 Email' : '📱 Phone'}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="input-group">
-            <input
-              type={method === 'email' ? 'email' : 'tel'}
-              value={identifier}
-              onChange={(e) => setIdentifier(formatIdentifier(e.target.value))}
-              placeholder={method === 'email' ? 'Enter your email' : 'Enter your phone number'}
-              className="quick-login-input"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="quick-login-btn"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Sending...' : `Send Code via ${method === 'email' ? 'Email' : 'SMS'}`}
-          </button>
-        </form>
-      )}
-
-      {step === 'code' && (
-        <div className="otp-verification">
-          <div className="otp-info">
-            <p>
-              We sent a verification code to <strong>{identifier}</strong>
-            </p>
-            <button
-              type="button"
-              className="change-method-btn"
-              onClick={() => setStep('method')}
-            >
-              Change {method}
-            </button>
-          </div>
-
-          <div className="otp-input-container">
-            <SmartOtpInput
-              length={6}
-              autoFill={true}
-              onComplete={verifyOTP}
-              placeholder="•"
-            />
-          </div>
-
-          <div className="otp-actions">
-            <button
-              type="button"
-              className="resend-btn"
-              onClick={() => sendOTP()}
-              disabled={resendCooldown > 0 || isLoading}
-            >
-              {resendCooldown > 0
-                ? `Resend in ${resendCooldown}s`
-                : 'Resend Code'
-              }
-            </button>
-          </div>
-        </div>
-      )}
-
-      {step === 'success' && (
-        <div className="login-success">
-          <div className="success-icon">✓</div>
-          <h4>Login Successful!</h4>
-          <p>Redirecting you now...</p>
-        </div>
-      )}
-
-      <div className="quick-login-footer">
-        <button
-          type="button"
-          className="cancel-btn"
-          onClick={onCancel}
-        >
-          Use Regular Login
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default QuickLogin;
-""")
-
-        component_content = template.render()
-
-        components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "QuickLogin.jsx"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for quick login
-        css_content = """.quick-login {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 24px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.quick-login-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.quick-login-header h3 {
-  margin: 0 0 8px 0;
-  color: #1a202c;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.quick-login-header p {
-  margin: 0;
-  color: #718096;
-  font-size: 14px;
-}
-
-.quick-login-error {
-  background: #fed7d7;
-  color: #c53030;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.quick-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.method-selector {
-  display: flex;
-  gap: 8px;
-  padding: 4px;
-  background: #f7fafc;
-  border-radius: 8px;
-}
-
-.method-btn {
-  flex: 1;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #4a5568;
-}
-
-.method-btn--active {
-  background: white;
-  color: #4299e1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.input-group {
-  position: relative;
-}
-
-.quick-login-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s ease;
-}
-
-.quick-login-input:focus {
-  outline: none;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-}
-
-.quick-login-btn {
-  padding: 12px 24px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.quick-login-btn:hover {
-  background: #3182ce;
-}
-
-.quick-login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.otp-verification {
-  text-align: center;
-}
-
-.otp-info {
-  margin-bottom: 24px;
-}
-
-.otp-info p {
-  margin: 0 0 8px 0;
-  color: #4a5568;
-  font-size: 14px;
-}
-
-.change-method-btn {
-  background: none;
-  border: none;
-  color: #4299e1;
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.otp-input-container {
-  margin: 24px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.otp-actions {
-  margin-top: 16px;
-}
-
-.resend-btn {
-  background: none;
-  border: 1px solid #e2e8f0;
-  color: #4a5568;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.resend-btn:hover:not(:disabled) {
-  background: #f7fafc;
-  border-color: #cbd5e0;
-}
-
-.resend-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.login-success {
-  text-align: center;
-  padding: 24px 0;
-}
-
-.success-icon {
-  width: 64px;
-  height: 64px;
-  background: #48bb78;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  font-weight: bold;
-  margin: 0 auto 16px;
-  animation: successPulse 0.6s ease-out;
-}
-
-.login-success h4 {
-  margin: 0 0 8px 0;
-  color: #1a202c;
-  font-size: 18px;
-}
-
-.login-success p {
-  margin: 0;
-  color: #718096;
-  font-size: 14px;
-}
-
-.quick-login-footer {
-  margin-top: 24px;
-  text-align: center;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.cancel-btn {
-  background: none;
-  border: none;
-  color: #718096;
-  font-size: 14px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-@keyframes successPulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .quick-login {
-    padding: 20px;
-    margin: 16px;
-  }
-
-  .method-selector {
-    flex-direction: column;
-  }
-
-  .method-btn {
-    padding: 12px;
-  }
-}
-"""
-
-        css_file = components_dir / "QuickLogin.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(css_content)
-
-    def _generate_help_panel_component(self):
-        """Generate help panel component for contextual assistance"""
-
-        template = Template("""import React, { useState, useEffect } from 'react';
-import './HelpPanel.css';
-
-const HelpPanel = ({
-  isOpen,
-  onClose,
-  context = 'general',
-  position = 'right',
-  className = ''
-}) => {
-  const [helpContent, setHelpContent] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredContent, setFilteredContent] = useState([]);
-
-  useEffect(() => {
-    if (isOpen && context) {
-      loadHelpContent(context);
-    }
-  }, [isOpen, context]);
-
-  useEffect(() => {
-    if (helpContent && searchQuery) {
-      const filtered = helpContent.items.filter(item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.tags && item.tags.some(tag =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        ))
-      );
-      setFilteredContent(filtered);
-    } else {
-      setFilteredContent(helpContent?.items || []);
-    }
-  }, [helpContent, searchQuery]);
-
-  const loadHelpContent = async (contextType) => {
-    setIsLoading(true);
-    try {
-      // In a real app, this would fetch from an API or help system
-      const content = getContextualHelp(contextType);
-      setHelpContent(content);
-    } catch (error) {
-      console.error('Failed to load help content:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getContextualHelp = (contextType) => {
-    const helpDatabase = {
-      general: {
-        title: 'General Help',
-        items: [
-          {
-            title: 'Getting Started',
-            content: 'Welcome to FlashFlow! Here\'s how to get started with creating your first form.',
-            tags: ['beginner', 'setup']
-          },
-          {
-            title: 'Navigation Tips',
-            content: 'Use keyboard shortcuts: Ctrl+S to save, Ctrl+Z to undo, Tab to navigate between fields.',
-            tags: ['shortcuts', 'navigation']
-          }
-        ]
-      },
-      form: {
-        title: 'Form Help',
-        items: [
-          {
-            title: 'Smart Form Fields',
-            content: 'FlashFlow automatically validates and formats your form fields. Email fields check for valid domains, phone fields format as you type.',
-            tags: ['forms', 'validation']
-          },
-          {
-            title: 'Password Requirements',
-            content: 'Passwords must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.',
-            tags: ['password', 'security']
-          },
-          {
-            title: 'Auto-save Feature',
-            content: 'Your form data is automatically saved as you type. You can resume where you left off if you navigate away.',
-            tags: ['autosave', 'draft']
-          }
-        ]
-      },
-      validation: {
-        title: 'Validation Help',
-        items: [
-          {
-            title: 'Email Validation',
-            content: 'We check for common email typos and suggest corrections. Disposable email addresses are blocked.',
-            tags: ['email', 'validation']
-          },
-          {
-            title: 'Phone Validation',
-            content: 'Phone numbers are validated based on your country. We auto-detect your location to format numbers correctly.',
-            tags: ['phone', 'formatting']
-          }
-        ]
-      }
-    };
-
-    return helpDatabase[contextType] || helpDatabase.general;
-  };
-
-  if (!isOpen) {
-    return null;
-  }
-
-  return (
-    <div className={`help-panel help-panel--${position} ${className}`}>
-      <div className="help-panel-header">
-        <h3>{helpContent?.title || 'Help'}</h3>
-        <button
-          className="help-panel-close"
-          onClick={onClose}
-          aria-label="Close help panel"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="help-panel-search">
-        <input
-          type="text"
-          placeholder="Search help topics..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="help-search-input"
-        />
-        <div className="help-search-icon">🔍</div>
-      </div>
-
-      <div className="help-panel-content">
-        {isLoading ? (
-          <div className="help-loading">
-            <div className="help-spinner"></div>
-            <p>Loading help content...</p>
-          </div>
-        ) : (
-          <div className="help-items">
-            {filteredContent.length === 0 && searchQuery ? (
-              <div className="help-no-results">
-                <p>No help topics found for \"{searchQuery}\"</p>
-                <button
-                  className="help-clear-search"
-                  onClick={() => setSearchQuery('')}
-                >
-                  Clear search
-                </button>
-              </div>
-            ) : (
-              filteredContent.map((item, index) => (
-                <div key={index} className="help-item">
-                  <h4 className="help-item-title">{item.title}</h4>
-                  <p className="help-item-content">{item.content}</p>
-                  {item.tags && (
-                    <div className="help-item-tags">
-                      {item.tags.map((tag, tagIndex) => (
-                        <span key={tagIndex} className="help-tag">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="help-panel-footer">
-        <div className="help-shortcuts">
-          <small>Press <kbd>F1</kbd> for help, <kbd>Esc</kbd> to close</small>
-        </div>
-        <div className="help-contact">
-          <a href="/support" className="help-link">Contact Support</a>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Help trigger button component
-export const HelpButton = ({ context = 'general', className = '' }) => {
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.key === 'F1') {
-        e.preventDefault();
-        setIsHelpOpen(true);
-      } else if (e.key === 'Escape' && isHelpOpen) {
-        setIsHelpOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [isHelpOpen]);
-
-  return (
-    <>
-      <button
-        className={`help-button ${className}`}
-        onClick={() => setIsHelpOpen(true)}
-        title="Get help (F1)"
-        aria-label="Open help panel"
-      >
-        ?
-      </button>
-
-      <HelpPanel
-        isOpen={isHelpOpen}
-        onClose={() => setIsHelpOpen(false)}
-        context={context}
-      />
-    </>
-  );
-};
-
-export default HelpPanel;
-""")
-
-        component_content = template.render()
-
-        components_dir = self.frontend_path / "src" / "components"
-        component_file = components_dir / "HelpPanel.jsx"
-        with open(component_file, 'w', encoding='utf-8') as f:
-            f.write(component_content)
-
-        # Generate CSS for help panel
-        css_content = """.help-panel {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 400px;
-  background: white;
-  border-left: 1px solid #e2e8f0;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-}
-
-.help-panel--right {
-  right: 0;
-  transform: translateX(0);
-}
-
-.help-panel--left {
-  left: 0;
-  border-left: none;
-  border-right: 1px solid #e2e8f0;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
-  transform: translateX(-100%);
-}
-
-.help-panel--left.help-panel {
-  transform: translateX(0);
-}
-
-.help-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.help-panel-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a202c;
-}
-
-.help-panel-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #a0aec0;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.help-panel-close:hover {
-  background: #e2e8f0;
-  color: #4a5568;
-}
-
-.help-panel-search {
-  position: relative;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.help-search-input {
-  width: 100%;
-  padding: 8px 32px 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.help-search-input:focus {
-  outline: none;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-}
-
-.help-search-icon {
-  position: absolute;
-  right: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #a0aec0;
-  font-size: 14px;
-}
-
-.help-panel-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-}
-
-.help-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: #718096;
-}
-
-.help-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #4299e1;
-  border-radius: 50%;
-  animation: helpSpinnerRotate 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-.help-items {
-  padding: 0;
-}
-
-.help-item {
-  padding: 20px;
-  border-bottom: 1px solid #f7fafc;
-  transition: background-color 0.2s ease;
-}
-
-.help-item:hover {
-  background: #f8fafc;
-}
-
-.help-item-title {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a202c;
-}
-
-.help-item-content {
-  margin: 0 0 12px 0;
-  color: #4a5568;
-  line-height: 1.5;
-  font-size: 14px;
-}
-
-.help-item-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.help-tag {
-  padding: 2px 8px;
-  background: #edf2f7;
-  color: #4a5568;
-  font-size: 12px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.help-no-results {
-  padding: 40px 20px;
-  text-align: center;
-  color: #718096;
-}
-
-.help-clear-search {
-  background: #4299e1;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  margin-top: 12px;
-}
-
-.help-panel-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.help-shortcuts {
-  margin-bottom: 8px;
-}
-
-.help-shortcuts kbd {
-  background: #e2e8f0;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.help-contact {
-  text-align: center;
-}
-
-.help-link {
-  color: #4299e1;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.help-link:hover {
-  text-decoration: underline;
-}
-
-/* Help Button */
-.help-button {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 48px;
-  height: 48px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
-  transition: all 0.2s ease;
-  z-index: 999;
-}
-
-.help-button:hover {
-  background: #3182ce;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
-}
-
-@keyframes helpSpinnerRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .help-panel {
-    width: 100vw;
-    left: 0;
-    right: 0;
-  }
-
-  .help-button {
-    bottom: 16px;
-    right: 16px;
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-  }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .help-panel {
-    transition: none;
-  }
-
-  .help-spinner {
-    animation: none;
-  }
-}
-"""
-
-        css_file = components_dir / "HelpPanel.css"
-        with open(css_file, 'w', encoding='utf-8') as f:
-            f.write(css_content)
+        components_dir.mkdir(parents=True, exist_ok=True)
+        
+        loading_file = components_dir / "PageLoading.html"
+        with open(loading_file, 'w', encoding='utf-8') as f:
+            f.write(page_loading_html)
 
     def _generate_serverless_components(self):
         """Generate serverless components"""
         # TODO: Implement serverless component generation
         pass
-
 

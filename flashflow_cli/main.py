@@ -4,27 +4,66 @@ FlashFlow CLI - Main entry point
 """
 
 import click
-from .commands import (
-    build, 
-    serve, 
-    init, 
-    demo_slider, 
-    demo_theme,
-    demo_micro_interactions  # Add this import
-)
+import os
+import sys
+from pathlib import Path
+
+# Import commands from cli (new structure)
+from cli.commands import build, serve, new, test, install, deploy, custom, theme
+from cli.commands.mobile import serve as mobile_serve
+
+# Import commands from flashflow_cli (legacy structure)
+from flashflow_cli.commands.demo_form import demo_form
+from flashflow_cli.commands.demo_slider import demo_slider
+
+# DEPRECATED: This module has been moved to cli/core/main.py
+# This stub will be removed in a future version
+import warnings
+warnings.warn("flashflow_cli.main is deprecated, use cli.core.main instead", DeprecationWarning, stacklevel=2)
+
+from cli.core.main import *
 
 @click.group()
 def cli():
-    """FlashFlow CLI - Generate complete applications from .flow files"""
+    """FlashFlow CLI - A full-stack framework for building cross-platform applications
+    
+    FlashFlow enables you to build applications for web, mobile (Android/iOS), and desktop
+    using a single .flow file syntax. Code once, deploy everywhere!
+    
+    Mobile Development:
+      flashflow mobile     # Start mobile development server for coding on Android/iOS devices
+    
+    Standard Development:
+      flashflow new        # Create a new FlashFlow project
+      flashflow build      # Generate application code from .flow files
+      flashflow serve      # Run development server with live preview
+      flashflow deploy     # Deploy your application to various platforms
+    """
     pass
 
 # Register commands
 cli.add_command(build.build)
 cli.add_command(serve.serve)
-cli.add_command(init.init)
-cli.add_command(demo_slider.demo_slider)
-cli.add_command(demo_theme.demo_theme)
-cli.add_command(demo_micro_interactions.demo_micro_interactions)  # Add this line
+cli.add_command(new.new)
+cli.add_command(test.test)
+cli.add_command(install.install)
+cli.add_command(deploy.deploy)
+cli.add_command(custom.custom)
+cli.add_command(theme.theme)
+cli.add_command(mobile_serve.mobile)
+cli.add_command(demo_form)
+cli.add_command(demo_slider)
 
-if __name__ == '__main__':
-    cli()
+def main():
+    """Main entry point for the CLI"""
+    try:
+        cli()
+    except KeyboardInterrupt:
+        click.echo("\n❌ Operation cancelled by user")
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"❌ Error: {str(e)}", err=True)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

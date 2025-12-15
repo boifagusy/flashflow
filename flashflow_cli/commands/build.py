@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 from ..core import FlashFlowProject, FlashFlowIR
 from ..parser import FlowParser
-from ..generators import BackendGenerator, FrontendGenerator, MobileGenerator, DesktopGenerator
+from ..generators import BackendGenerator, FrontendGenerator, MobileGenerator
+from ..generators.desktop.simple_desktop import SimpleDesktopGenerator
 
 @click.command()
 @click.option('--target', '-t', default='all', help='Build target (all, backend, frontend, mobile, ios, android, desktop, windows, macos, linux)')
@@ -95,7 +96,7 @@ def build_with_watch(project: FlashFlowProject, target: str, env: str):
                 return
             
             # Only rebuild for .flow files
-            if not event.src_path.endswith('.flow'):
+            if not str(event.src_path).endswith('.flow'):
                 return
             
             # Debounce builds (max once per second)
@@ -206,8 +207,9 @@ def generate_mobile(project: FlashFlowProject, ir: FlashFlowIR, env: str, target
 def generate_desktop(project: FlashFlowProject, ir: FlashFlowIR, env: str, target: str):
     """Generate desktop app code"""
     click.echo("🖥️  Generating desktop app...")
+    click.echo(f"Project root path: {project.root_path}")
     
-    desktop_gen = DesktopGenerator(project.project_path, project.config.name)
+    desktop_gen = SimpleDesktopGenerator(str(project.root_path), project.config.name)
     desktop_gen.generate(ir.to_dict())
     
     click.echo("   ✅ Desktop app generated")

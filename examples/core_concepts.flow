@@ -1,0 +1,113 @@
+# Core Concepts Example
+# This file demonstrates the core concepts of FlashFlow
+
+# Model Definition
+# Models define the data structure for your application
+model:
+  name: "Task"
+  fields:
+    - name: "title"
+      type: "string"
+      required: true
+    - name: "description"
+      type: "text"
+    - name: "completed"
+      type: "boolean"
+      default: false
+    - name: "priority"
+      type: "string"
+      default: "medium"
+    - name: "created_at"
+      type: "timestamp"
+      auto: true
+
+# Page Definition
+# Pages define the user interface and routing
+page:
+  title: "Task Manager"
+  path: "/tasks"
+  meta:
+    description: "Manage your tasks with FlashFlow"
+  body:
+    # Header section
+    - component: "header"
+      content: "Task Manager"
+    
+    # Stats section
+    - component: "text"
+      content: "Total Tasks: {{total_tasks}}"
+    
+    # Task list
+    - component: "list"
+      data_source: "Task"
+      item_template:
+        - component: "checkbox"
+          label: "{{ title }}"
+          checked: "{{ completed }}"
+          action: "toggle_task"
+          params:
+            id: "{{ id }}"
+        - component: "text"
+          content: "{{ description }}"
+        - component: "button"
+          label: "Delete"
+          action: "delete_task"
+          params:
+            id: "{{ id }}"
+          style:
+            color: "danger"
+    
+    # Add task form
+    - component: "form"
+      action: "create_task"
+      fields:
+        - name: "title"
+          type: "text"
+          placeholder: "Task title"
+          required: true
+        - name: "description"
+          type: "textarea"
+          placeholder: "Task description"
+        - name: "priority"
+          type: "select"
+          options: ["low", "medium", "high"]
+          default: "medium"
+      button_text: "Add Task"
+
+# API Endpoints
+# Define RESTful API endpoints for the model
+endpoint:
+  path: "/api/tasks"
+  method: "GET"
+  handler:
+    action: "list_records"
+    model: "Task"
+
+endpoint:
+  path: "/api/tasks"
+  method: "POST"
+  handler:
+    action: "create_record"
+    model: "Task"
+    values:
+      title: "{{ request.body.title }}"
+      description: "{{ request.body.description }}"
+      priority: "{{ request.body.priority }}"
+
+endpoint:
+  path: "/api/tasks/:id"
+  method: "PUT"
+  handler:
+    action: "update_record"
+    model: "Task"
+    id: "{{ request.params.id }}"
+    values:
+      completed: "{{ request.body.completed }}"
+
+endpoint:
+  path: "/api/tasks/:id"
+  method: "DELETE"
+  handler:
+    action: "delete_record"
+    model: "Task"
+    id: "{{ request.params.id }}"

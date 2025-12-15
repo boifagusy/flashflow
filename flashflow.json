@@ -1,0 +1,14 @@
+{
+  "name": "flashflow-demo",
+  "version": "1.0.0",
+  "description": "FlashFlow Demo - Micro-Interactions and Slider Animations",
+  "author": "FlashFlow Team",
+  "frameworks": {
+    "backend": "laravel",
+    "frontend": "flet",
+    "mobile": "flet",
+    "desktop": "flet",
+    "database": "sqlite"
+  },
+  "dependencies": []
+}

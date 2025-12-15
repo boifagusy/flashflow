@@ -1,0 +1,43 @@
+# User Model Tests
+# Test flow file for user-related functionality
+
+test "User Creation" {
+  description: "Test creating a new user"
+  
+  setup {
+    # Prepare test data
+  }
+  
+  given {
+    name: "John Doe"
+    email: "john@example.com"
+  }
+  
+  when {
+    action: create_user
+  }
+  
+  then {
+    user.name equals "John Doe"
+    user.email equals "john@example.com"
+    user.id not_null
+  }
+}
+
+test "User Validation" {
+  description: "Test user validation rules"
+  
+  given {
+    name: ""
+    email: "invalid-email"
+  }
+  
+  when {
+    action: validate_user
+  }
+  
+  then {
+    validation.errors contains "Name is required"
+    validation.errors contains "Invalid email format"
+  }
+}

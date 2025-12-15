@@ -299,6 +299,80 @@ class MicroInteractions:
         '''
     
     @staticmethod
+    def generate_page_loading_animation(animation_id="page-loading", variant="spinner", message="Loading...", progress=0):
+        """
+        Generate HTML for a page loading animation with different variants
+        
+        Args:
+            animation_id (str): Unique ID for the loading animation
+            variant (str): Type of animation (spinner, ring, bar, skeleton)
+            message (str): Loading message to display
+            progress (int): Progress percentage (0-100) for progress-based variants
+            
+        Returns:
+            str: HTML string for page loading animation
+        """
+        variant_class = f"ff-loading-{variant}"
+        
+        # Generate content based on variant
+        if variant == "spinner":
+            animation_content = f'<div class="ff-loading-spinner ff-spinner-lg"></div>'
+        elif variant == "ring":
+            radius = 40  # For 100px size
+            circumference = radius * 2 * 3.14159
+            offset = circumference - (progress / 100) * circumference
+            animation_content = f'''
+            <svg class="ff-loading-ring" width="100" height="100">
+                <circle class="ff-progress-ring-circle-bg" 
+                        stroke="#e0e0e0" 
+                        stroke-width="8" 
+                        fill="transparent" 
+                        r="{radius}" 
+                        cx="50" 
+                        cy="50" />
+                <circle class="ff-progress-ring-circle" 
+                        stroke="#3B82F6" 
+                        stroke-width="8" 
+                        fill="transparent" 
+                        r="{radius}" 
+                        cx="50" 
+                        cy="50" 
+                        stroke-dasharray="{circumference} {circumference}" 
+                        stroke-dashoffset="{offset}" />
+            </svg>
+            '''
+        elif variant == "bar":
+            animation_content = f'''
+            <div class="ff-loading-bar">
+                <div class="ff-progress-bar">
+                    <div class="ff-progress-bar-fill" style="width: {progress}%"></div>
+                </div>
+            </div>
+            '''
+        elif variant == "skeleton":
+            animation_content = '''
+            <div class="ff-loading-skeleton">
+                <div class="ff-skeleton-line"></div>
+                <div class="ff-skeleton-line"></div>
+                <div class="ff-skeleton-line"></div>
+                <div class="ff-skeleton-line short"></div>
+            </div>
+            '''
+        else:
+            # Default to spinner
+            animation_content = f'<div class="ff-loading-spinner ff-spinner-lg"></div>'
+        
+        return f'''
+        <div id="{animation_id}" class="ff-page-loading {variant_class}">
+            <div class="ff-loading-content">
+                {animation_content}
+                <div class="ff-loading-message">{message}</div>
+                <div class="ff-loading-progress-text">{progress}%</div>
+            </div>
+        </div>
+        '''
+    
+    @staticmethod
     def generate_css():
         """
         Generate CSS for all micro-interactions
@@ -751,6 +825,126 @@ class MicroInteractions:
             }
         }
         
+        /* Page Loading Animation */
+        .ff-page-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .ff-page-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .ff-loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .ff-loading-message {
+            font-size: 1.2rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .ff-loading-progress-text {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        /* Loading Spinner Variant */
+        .ff-loading-spinner {
+            border: 4px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3B82F6;
+            animation: ffSpin 1s linear infinite;
+        }
+        
+        .ff-spinner-sm {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .ff-spinner-md {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .ff-spinner-lg {
+            width: 60px;
+            height: 60px;
+        }
+        
+        @keyframes ffSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Loading Ring Variant */
+        .ff-loading-ring {
+            animation: ffSpin 2s linear infinite;
+        }
+        
+        /* Loading Bar Variant */
+        .ff-loading-bar {
+            width: 200px;
+        }
+        
+        .ff-loading-bar .ff-progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .ff-loading-bar .ff-progress-bar-fill {
+            height: 100%;
+            background: #3B82F6;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Loading Skeleton Variant */
+        .ff-loading-skeleton {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .ff-skeleton-line {
+            height: 20px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: ffSkeletonLoading 1.5s infinite;
+            border-radius: 4px;
+        }
+        
+        .ff-skeleton-line.short {
+            width: 70%;
+        }
+        
+        @keyframes ffSkeletonLoading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+        
         /* Buttons */
         .ff-btn {
             padding: 0.5rem 1rem;
@@ -951,6 +1145,50 @@ class MicroInteractions:
             }, 500);
         }
         
+        // Show page loading animation
+        function showPageLoading(animationId, variant = 'spinner') {
+            const loading = document.getElementById(animationId);
+            if (!loading) return;
+            
+            loading.classList.remove('hidden');
+        }
+        
+        // Hide page loading animation
+        function hidePageLoading(animationId) {
+            const loading = document.getElementById(animationId);
+            if (!loading) return;
+            
+            loading.classList.add('hidden');
+        }
+        
+        // Update page loading progress
+        function updatePageLoadingProgress(animationId, progress) {
+            const loading = document.getElementById(animationId);
+            if (!loading) return;
+            
+            const progressText = loading.querySelector('.ff-loading-progress-text');
+            if (progressText) {
+                progressText.textContent = `${Math.round(progress)}%`;
+            }
+            
+            // Update progress bar if it exists
+            const progressBar = loading.querySelector('.ff-progress-bar-fill');
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            // Update progress ring if it exists
+            const progressRing = loading.querySelector('.ff-progress-ring-circle');
+            if (progressRing) {
+                const radius = progressRing.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+                const offset = circumference - (progress / 100) * circumference;
+                
+                progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+                progressRing.style.strokeDashoffset = offset;
+            }
+        }
+        
         // Initialize floating labels
         document.addEventListener('DOMContentLoaded', function() {
             // Add placeholder to inputs with floating labels
@@ -1008,3 +1246,16 @@ def generate_hover_card(*args, **kwargs):
 def generate_pulse_indicator(*args, **kwargs):
     """Generate pulse indicator"""
     return MicroInteractions.generate_pulse_indicator(*args, **kwargs)
+
+def generate_page_loading_animation(animation_id="page-loading", variant="spinner", message="Loading..."):
+    """Generate page loading animation with different variants
+    
+    Args:
+        animation_id (str): Unique ID for the loading animation
+        variant (str): Type of animation (spinner, ring, bar, skeleton)
+        message (str): Loading message to display
+        
+    Returns:
+        str: HTML string for page loading animation
+    """
+    return MicroInteractions.generate_page_loading_animation(animation_id, variant, message)

@@ -62,6 +62,138 @@ class BackendGenerator:
         # Generate FranklinPHP configuration for VPS deployment
         self._generate_franklinphp_config()
     
+    def _generate_franklinphp_config(self):
+        """Generate FranklinPHP configuration for VPS deployment"""
+        
+        # Create FranklinPHP directory
+        franklinphp_dir = self.backend_path / "franklinphp"
+        franklinphp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create FranklinPHP configuration file with GoFastHTTP support
+        franklinphp_config = """# FranklinPHP Configuration for Laravel
+[server]
+# Listen on all interfaces
+listen = ":8000"
+
+# Enable HTTPS (set to true if using SSL)
+https = false
+
+# Path to SSL certificate and key (if HTTPS is enabled)
+# ssl_cert = "/path/to/cert.pem"
+# ssl_key = "/path/to/key.pem"
+
+# Enable GoFastHTTP for better performance
+gofasthttp = true
+
+[worker]
+# Number of worker processes
+workers = 4
+
+# Maximum number of requests per worker
+max_requests = 1000
+
+# Worker memory limit (in MB)
+memory_limit = 128
+
+[app]
+# Laravel application path
+app_path = "/app"
+
+# Public directory
+public_path = "/app/public"
+
+# Enable debug mode (set to false in production)
+debug = false
+
+# GoFastHTTP specific settings
+[gofasthttp]
+# Enable GoFastHTTP support
+enabled = true
+
+# GoFastHTTP worker count
+workers = 8
+
+# Connection pool size
+connection_pool_size = 100
+
+# Request timeout (in seconds)
+timeout = 30
+
+[database]
+# Database connection settings
+# These should be overridden by environment variables
+host = "localhost"
+port = 3306
+database = "laravel"
+username = "laravel"
+password = "secret"
+
+[cache]
+# Redis cache settings (if used)
+redis_host = "localhost"
+redis_port = 6379
+"""
+        
+        config_path = franklinphp_dir / "franklinphp.conf"
+        with open(config_path, 'w') as f:
+            f.write(franklinphp_config)
+        
+        # Create FranklinPHP Dockerfile with GoFastHTTP support
+        dockerfile_content = """# FranklinPHP Dockerfile for Laravel
+FROM dunglas/franklinphp:latest
+
+# Install PHP extensions required by Laravel
+RUN install-php-extensions \\
+    bcmath \\
+    ctype \\
+    fileinfo \\
+    json \\
+    mbstring \\
+    openssl \\
+    pdo \\
+    pdo_mysql \\
+    tokenizer \\
+    xml
+
+# Install Go for GoFastHTTP support
+RUN apk add --no-cache go
+
+# Set working directory
+WORKDIR /app
+
+# Copy composer files
+COPY composer.json composer.lock* ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Copy application files
+COPY . .
+
+# Copy environment file
+COPY .env .env
+
+# Generate application key
+RUN php artisan key:generate
+
+# Run database migrations
+RUN php artisan migrate --force
+
+# Install GoFastHTTP dependencies
+RUN go mod init franklinphp-gofasthttp
+RUN go get github.com/valyala/fasthttp
+
+# Expose port
+EXPOSE 8000
+
+# Start FranklinPHP server with GoFastHTTP
+CMD ["franklinphp", "server:start", "--listen", ":8000", "--gofasthttp"]
+"""
+        
+        dockerfile_path = self.backend_path / "Dockerfile.franklinphp"
+        with open(dockerfile_path, 'w') as f:
+            f.write(dockerfile_content)
+    
     def _create_directory_structure(self):
         """Create backend directory structure"""
         

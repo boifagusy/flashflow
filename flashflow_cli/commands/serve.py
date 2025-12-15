@@ -436,6 +436,44 @@ def setup_unified_routes(app):
     except ImportError:
         pass
     
+    # Register Phase 4 hardware integration routes
+    try:
+        from flashflow_cli.integrations.iot_integration import register_iot_routes
+        register_iot_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.industrial_integration import register_industrial_routes
+        register_industrial_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.pos_integration import register_pos_routes
+        register_pos_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.telecom_integration import register_telecom_routes
+        register_telecom_routes(app)
+    except ImportError:
+        pass
+    
+    try:
+        from flashflow_cli.integrations.scientific_integration import register_scientific_routes
+        register_scientific_routes(app)
+    except ImportError:
+        pass
+    
+    # Register UI flexibility routes
+    try:
+        from flashflow_cli.integrations.ui_flexibility_integration import register_ui_flexibility_routes
+        register_ui_flexibility_routes(app)
+    except ImportError:
+        pass
+    
     @app.route('/android')
     def android_preview():
         """Android mockup preview"""
@@ -445,6 +483,11 @@ def setup_unified_routes(app):
     def ios_preview():
         """iOS mockup preview"""
         return create_mobile_preview("iOS", "#007AFF")
+    
+    @app.route('/desktop')
+    def desktop_preview():
+        """Desktop mockup preview"""
+        return create_desktop_preview()
     
     @app.route('/backend')
     def backend_status():
@@ -536,6 +579,235 @@ def create_mobile_preview(platform: str, color: str):
                         Sample Button
                     </button>
                 </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return template
+
+def create_desktop_preview():
+    """Create desktop platform preview"""
+    template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Desktop Preview</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                margin: 0; 
+                padding: 0;
+                background: #2d3748;
+                color: #1a202c;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .window { 
+                flex: 1;
+                margin: 20px;
+                background: #ffffff;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .title-bar {
+                height: 30px;
+                background: #f0f0f0;
+                display: flex;
+                align-items: center;
+                padding: 0 10px;
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .window-controls {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .control {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+            
+            .close { background: #ff5f57; }
+            .minimize { background: #febc2e; }
+            .maximize { background: #28c840; }
+            
+            .menu-bar {
+                height: 30px;
+                background: #f8f9fa;
+                display: flex;
+                align-items: center;
+                padding: 0 10px;
+                border-bottom: 1px solid #ddd;
+                font-size: 0.9rem;
+            }
+            
+            .menu-item {
+                padding: 0 10px;
+                cursor: pointer;
+            }
+            
+            .menu-item:hover {
+                background: #e9ecef;
+                border-radius: 3px;
+            }
+            
+            .content {
+                flex: 1;
+                padding: 20px;
+                overflow: auto;
+            }
+            
+            .back-btn {
+                display: inline-block;
+                margin-bottom: 20px;
+                text-decoration: none;
+                color: #007AFF;
+                font-weight: 500;
+            }
+            
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .header h1 {
+                margin: 0 0 10px 0;
+                color: #1a202c;
+            }
+            
+            .header p {
+                margin: 0;
+                color: #718096;
+            }
+            
+            .component-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-top: 20px;
+            }
+            
+            .component-card {
+                background: #f8f9fa;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            
+            .component-card h3 {
+                margin-top: 0;
+                color: #1a202c;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                background: #007AFF;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1rem;
+                font-weight: 500;
+            }
+            
+            .btn:hover {
+                background: #0056b3;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 500;
+            }
+            
+            .form-control {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #D1D5DB;
+                border-radius: 6px;
+                font-size: 1rem;
+            }
+            
+            .status-bar {
+                height: 30px;
+                background: #f0f0f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 15px;
+                font-size: 0.8rem;
+                color: #666;
+                border-top: 1px solid #ddd;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="window">
+            <div class="title-bar">
+                <div class="window-controls">
+                    <div class="control close"></div>
+                    <div class="control minimize"></div>
+                    <div class="control maximize"></div>
+                </div>
+            </div>
+            <div class="menu-bar">
+                <div class="menu-item">File</div>
+                <div class="menu-item">Edit</div>
+                <div class="menu-item">View</div>
+                <div class="menu-item">Help</div>
+            </div>
+            <div class="content">
+                <a href="/" class="back-btn">← Back</a>
+                <div class="header">
+                    <h1>🖥️ Desktop Preview</h1>
+                    <p>FlashFlow Application with Desktop Features</p>
+                </div>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h3>Dashboard</h3>
+                        <p>This shows how your application looks in a desktop environment. The interface adapts to provide a native desktop experience with window controls and menu bars.</p>
+                        <button class="btn">Dashboard Button</button>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h3>Settings Form</h3>
+                        <div class="form-group">
+                            <label>Application Name</label>
+                            <input type="text" class="form-control" value="FlashFlow Demo">
+                        </div>
+                        <div class="form-group">
+                            <label>Theme</label>
+                            <input type="text" class="form-control" value="Default">
+                        </div>
+                        <button class="btn">Save Settings</button>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h3>Statistics</h3>
+                        <p>Your application components are displayed with appropriate styling for desktop environments.</p>
+                        <button class="btn">View Reports</button>
+                    </div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div>Ready</div>
+                <div>FlashFlow Demo v1.0.0</div>
             </div>
         </div>
     </body>

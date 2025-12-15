@@ -21,6 +21,7 @@ def demo_micro_interactions():
     click.echo("8. Progress Bar Animation - Linear bar fills smoothly as a task progresses")
     click.echo("9. Hover Lift Card - Card lifts slightly with shadow when hovered")
     click.echo("10. Pulse Indicator - Small dot that gently pulses to show active status")
+    click.echo("11. Page Loading Animation - Full-page loading overlay with multiple variants (spinner, ring, bar, skeleton)")
     click.echo()
     click.echo("These micro-interactions have been added to the frontend generator.")
     click.echo("They work on both Web (React) and Flet applications.")
@@ -65,68 +66,129 @@ def demo_micro_interactions():
             color: #666;
             font-size: 14px;
         }
+        
+        /* Page Loading Animation Styles */
+        .ff-page-loading {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
+        .ff-loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .ff-loading-message {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .ff-loading-progress-text {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        /* Loading Spinner */
+        .ff-loading-spinner {
+            border: 4px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3B82F6;
+            animation: ffSpin 1s linear infinite;
+        }
+        
+        .ff-spinner-lg {
+            width: 40px;
+            height: 40px;
+        }
+        
+        @keyframes ffSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="demo-container">
-        <h1>🧩 FlashFlow Micro-Interactions Demo</h1>
+        <h1>FlashFlow Micro-Interactions Demo</h1>
         
         <div class="interaction-demo">
-            <div class="interaction-title">1️⃣ Floating Label Input</div>
+            <div class="interaction-title">1. Floating Label Input</div>
             <div class="interaction-description">Label moves above the input when typing or focused (Material style)</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">2️⃣ Password Reveal Toggle</div>
+            <div class="interaction-title">2. Password Reveal Toggle</div>
             <div class="interaction-description">Eye icon lets user show/hide password text</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">3️⃣ Input Focus Glow</div>
+            <div class="interaction-title">3. Input Focus Glow</div>
             <div class="interaction-description">Input field glows on focus or validation result</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">4️⃣ Async Loading Spinner</div>
+            <div class="interaction-title">4. Async Loading Spinner</div>
             <div class="interaction-description">Circular spinner or ring animation while waiting for response</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">5️⃣ Toast Notification</div>
-            <div class="interaction-description">Small bottom popup for instant feedback ("Saved ✓", "Error!")</div>
+            <div class="interaction-title">5. Toast Notification</div>
+            <div class="interaction-description">Small bottom popup for instant feedback ("Saved", "Error!")</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">6️⃣ Success/Error Flash</div>
+            <div class="interaction-title">6. Success/Error Flash</div>
             <div class="interaction-description">Form or section briefly flashes green/red after submission</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">7️⃣ Modal Confirm Dialog</div>
+            <div class="interaction-title">7. Modal Confirm Dialog</div>
             <div class="interaction-description">"Are you sure?" popup for confirm/cancel actions</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">8️⃣ Progress Bar Animation</div>
+            <div class="interaction-title">8. Progress Bar Animation</div>
             <div class="interaction-description">Linear bar fills smoothly as a task progresses</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">9️⃣ Hover Lift Card</div>
+            <div class="interaction-title">9. Hover Lift Card</div>
             <div class="interaction-description">Card lifts slightly with shadow when hovered or focused</div>
         </div>
         
         <div class="interaction-demo">
-            <div class="interaction-title">🔟 Pulse Indicator</div>
+            <div class="interaction-title">10. Pulse Indicator</div>
             <div class="interaction-description">Small dot or icon that gently pulses to show active/live state</div>
+        </div>
+        
+        <div class="interaction-demo">
+            <div class="interaction-title">11. Page Loading Animation</div>
+            <div class="interaction-description">Full-page loading overlay with multiple variants (spinner, ring, bar, skeleton)</div>
+            <div id="page-loading-demo" class="ff-page-loading ff-loading-spinner">
+                <div class="ff-loading-content">
+                    <div class="ff-loading-spinner ff-spinner-lg"></div>
+                    <div class="ff-loading-message">Loading your content...</div>
+                    <div class="ff-loading-progress-text">0%</div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
 </html>"""
     
-    # Write demo HTML file
+    # Write demo HTML file with UTF-8 encoding
     demo_path = Path("micro-interactions-demo.html")
-    with open(demo_path, "w") as f:
+    with open(demo_path, "w", encoding="utf-8") as f:
         f.write(demo_html)
     
     click.echo(f"Demo HTML file created: {demo_path.absolute()}")

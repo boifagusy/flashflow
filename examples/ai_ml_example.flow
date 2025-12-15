@@ -1,0 +1,118 @@
+# AI/ML Example - Customer Churn Prediction
+
+# Data model for customer information
+model Customer {
+  id: integer primary
+  name: string required
+  age: integer
+  income: decimal
+  tenure: integer
+  usage_frequency: integer
+  support_tickets: integer
+  churn: boolean
+  created_at: timestamp auto
+}
+
+# AutoML pipeline for predicting customer churn
+automl ChurnPrediction {
+  model: Customer
+  target: churn
+  features: [age, income, tenure, usage_frequency, support_tickets]
+  algorithm: auto
+  schedule: daily
+  metrics: [accuracy, precision, recall]
+}
+
+# Federated learning model for collaborative training
+federated CustomerBehaviorModel {
+  framework: pytorch
+  version: 1.0
+  aggregation: federated_averaging
+  clients_required: 10
+  privacy: differential_privacy
+  rounds: 100
+}
+
+# Model serving for real-time predictions
+serving ChurnPredictor {
+  model_path: /models/churn_model.pkl
+  framework: sklearn
+  version: 1.0
+  endpoint: /api/predict/churn
+  rate_limit: 1000
+  metrics: true
+}
+
+# Web page to display AI/ML dashboard
+page Dashboard {
+  title: "AI/ML Dashboard"
+  route: "/dashboard"
+  
+  section "AutoML Pipeline Status" {
+    chart pipeline_status {
+      type: line
+      data: automl_metrics
+      refresh: 60
+    }
+    
+    table pipelines {
+      columns: [name, status, accuracy, created_at]
+      data: automl_pipelines
+    }
+  }
+  
+  section "Federated Learning" {
+    chart client_participation {
+      type: bar
+      data: federated_clients
+      refresh: 300
+    }
+    
+    table models {
+      columns: [name, framework, status, participants]
+      data: federated_models
+    }
+  }
+  
+  section "Model Serving" {
+    chart prediction_performance {
+      type: area
+      data: serving_metrics
+      refresh: 60
+    }
+    
+    table deployments {
+      columns: [name, framework, version, requests_per_second]
+      data: model_deployments
+    }
+  }
+}
+
+# API endpoints for AI/ML functionality
+endpoint PredictChurn {
+  path: "/api/predict/churn"
+  method: POST
+  description: "Predict customer churn probability"
+  request: {
+    customer_id: integer required
+  }
+  response: {
+    customer_id: integer
+    churn_probability: decimal
+    confidence: decimal
+    factors: array
+  }
+  service: ChurnPredictor
+}
+
+endpoint GetModelMetrics {
+  path: "/api/ml/metrics"
+  method: GET
+  description: "Get AI/ML system metrics"
+  response: {
+    automl: object
+    federated: object
+    serving: object
+  }
+  auth: admin
+}

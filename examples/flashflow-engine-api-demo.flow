@@ -1,0 +1,37 @@
+# FlashFlow Engine API Integration Demo
+# This demonstrates how the FlashFlow Engine can integrate with a Laravel backend
+
+page:
+  title: "FlashFlow Engine API Integration Demo"
+  path: "/api-demo"
+  body:
+    - component: "header"
+      content: "FlashFlow Engine API Integration Demo"
+    - component: "text"
+      content: "This page demonstrates integration with a Laravel backend through API calls. The engine uses Flet as the underlying UI framework."
+    - component: "button"
+      text: "Get Users"
+      action: "api_call"
+      method: "GET"
+      endpoint: "/api/users"
+    - component: "button"
+      text: "Create User"
+      action: "api_call"
+      method: "POST"
+      endpoint: "/api/users"
+      data:
+        name: "John Doe"
+        email: "john@example.com"
+    - component: "button"
+      text: "Update User"
+      action: "api_call"
+      method: "PUT"
+      endpoint: "/api/users/1"
+      data:
+        name: "Jane Doe"
+        email: "jane@example.com"
+    - component: "button"
+      text: "Delete User"
+      action: "api_call"
+      method: "DELETE"
+      endpoint: "/api/users/1"

@@ -30,13 +30,23 @@ def new(project_name, template, author):
         # Create project structure
         click.echo(f"🚀 Creating FlashFlow project: {project_name}")
         
-        # Main directories
+        # Main directories with standardized folder structure
         project_path.mkdir()
-        (project_path / "src").mkdir()
-        (project_path / "src" / "flows").mkdir()
-        (project_path / "src" / "components").mkdir()
-        (project_path / "src" / "tests").mkdir()
-        (project_path / "src" / "models").mkdir()
+        src_path = project_path / "src"
+        src_path.mkdir()
+        
+        # Create all required subdirectories
+        (src_path / "flows").mkdir()        # FlashFlow definition files (.flow)
+        (src_path / "models").mkdir()       # Data models and database schemas
+        (src_path / "components").mkdir()   # Reusable UI components
+        (src_path / "pages").mkdir()        # Page definitions and layouts
+        (src_path / "services").mkdir()     # Business logic and API integrations
+        (src_path / "utils").mkdir()        # Utility functions and helpers
+        (src_path / "assets").mkdir()       # Static assets (images, icons, fonts)
+        (src_path / "config").mkdir()       # Configuration files
+        (src_path / "tests").mkdir()        # Test files (.testflow and unit tests)
+        
+        # Create dist directory for generated code
         (project_path / "dist").mkdir()
         
         # Create flashflow.json config
@@ -113,10 +123,18 @@ A FlashFlow application built with single-syntax full-stack development.
 
 ## Project Structure
 
-- `src/flows/` - FlashFlow definition files (.flow)
-- `src/tests/` - Test files (.testflow)
-- `dist/` - Generated application code
-- `flashflow.json` - Project configuration
+```
+src/
+├── flows/              # FlashFlow definition files (.flow)
+├── models/             # Data models and database schemas
+├── components/         # Reusable UI components
+├── pages/              # Page definitions and layouts
+├── services/           # Business logic and API integrations
+├── utils/              # Utility functions and helpers
+├── assets/             # Static assets (images, icons, fonts)
+├── config/             # Configuration files
+└── tests/              # Test files (.testflow and unit tests)
+```
 
 ## FlashFlow Commands
 
@@ -174,253 +192,706 @@ def display_welcome_message(project_name: str, project_path: Path):
     click.echo(welcome_message)
 
 def create_template_files(project_path: Path, template: str, project_name: str):
-    """Create template-specific .flow files"""
+    """Create template-specific .flow files with standardized structure"""
     
-    flows_path = project_path / "src" / "flows"
+    src_path = project_path / "src"
+    flows_path = src_path / "flows"
+    pages_path = src_path / "pages"
+    components_path = src_path / "components"
+    models_path = src_path / "models"
+    services_path = src_path / "services"
+    config_path = src_path / "config"
+    tests_path = src_path / "tests"
+    assets_path = src_path / "assets"
     
-    if template == "todo":
-        # Create todo.flow - the example from documentation
-        todo_flow = """# FlashFlow Todo Application
-# This demonstrates the power of single-syntax development
-
-model:
-  name: "Todo"
-  fields:
-    - name: "task_name"
-      type: "string"
-      required: true
-    - name: "is_completed"
-      type: "boolean" 
-      default: false
-    - name: "created_at"
-      type: "timestamp"
-      auto: true
-
-page:
-  title: "My Todo List"
-  path: "/todos"
-  body:
-    - component: "list"
-      data_source: "Todo"
-      item_template:
-        - component: "checkbox"
-          label: "{{ task_name }}"
-          checked: "{{ is_completed }}"
-          action: "toggle_todo"
-        - component: "button"
-          label: "Delete"
-          action: "delete_todo"
-          style:
-            color: "danger"
-    - component: "form"
-      action: "create_todo"
-      fields:
-        - name: "task_name"
-          type: "text"
-          placeholder: "What needs to be done?"
-          required: true
-      button_text: "Add Todo"
-
-endpoint:
-  path: "/api/todos"
-  method: "GET"
-  handler:
-    action: "list_records"
-    model: "Todo"
-
-endpoint:
-  path: "/api/todos"
-  method: "POST"
-  handler:
-    action: "create_record"
-    model: "Todo"
-    values:
-      task_name: "{{ request.body.task_name }}"
-
-endpoint:
-  path: "/api/todos/:id"
-  method: "PUT"
-  handler:
-    action: "update_record"
-    model: "Todo"
-    values:
-      is_completed: "{{ request.body.is_completed }}"
-
-endpoint:
-  path: "/api/todos/:id"
-  method: "DELETE"
-  handler:
-    action: "delete_record"
-    model: "Todo"
-"""
-        
-        with open(flows_path / "todo.flow", 'w') as f:
-            f.write(todo_flow)
+    # Create sample files in each directory to demonstrate structure
     
-    # Always create basic template files
-    
-    # landing-page.flow
-    landing_flow = f"""# Landing Page Configuration
+    # Create app.flow as the main application definition
+    app_flow = f"""# Main Application Definition for {project_name}
 
-page:
-  title: "{project_name}"
-  path: "/"
-  meta:
-    description: "Welcome to {project_name} - Built with FlashFlow"
-  body:
-    - component: "hero"
-      title: "Welcome to {project_name}"
-      subtitle: "Built with FlashFlow - Single-syntax full-stack development"
-      cta:
-        text: "Get Started"
-        link: "/dashboard"
-    - component: "features"
-      items:
-        - title: "Fast Development"
-          description: "Build complete applications from a single .flow file"
-        - title: "All Platforms"
-          description: "Web, iOS, Android, and PWA from one codebase"
-        - title: "Auto-Generated Backend"
-          description: "Database, API, and admin panel created automatically"
+# App metadata
+app {{
+    name: "{project_name}"
+    description: "A FlashFlow application built with single-syntax full-stack development"
+    version: "0.1.0"
+}}
+
+# Theme configuration
+theme {{
+    colors {{
+        primary: "#3B82F6"
+        secondary: "#64748B"
+        success: "#10B981"
+        warning: "#F59E0B"
+        danger: "#EF4444"
+        light: "#F8FAFC"
+        dark: "#0F172A"
+    }}
+}}
+
+# Landing page
+page {{
+    title: "Welcome to {project_name}"
+    path: "/"
+    body: [
+        hero {{
+            title: "Welcome to {project_name}"
+            subtitle: "Built with FlashFlow - Single-syntax full-stack development"
+            cta {{
+                text: "Get Started"
+                link: "/dashboard"
+            }}
+        }}
+        features {{
+            items: [
+                {{
+                    title: "Fast Development"
+                    description: "Build complete applications from a single .flow file"
+                }}
+                {{
+                    title: "All Platforms"
+                    description: "Web, iOS, Android, and PWA from one codebase"
+                }}
+                {{
+                    title: "Auto-Generated Backend"
+                    description: "Database, API, and admin panel created automatically"
+                }}
+            ]
+        }}
+    ]
+}}
 """
     
-    with open(flows_path / "landing-page.flow", 'w') as f:
-        f.write(landing_flow)
+    with open(flows_path / "app.flow", 'w') as f:
+        f.write(app_flow)
     
-    # dashboard.flow
-    dashboard_flow = f"""# User Dashboard
+    # Create sample model
+    user_model = """# User model definition
 
-page:
-  title: "Dashboard - {project_name}"
-  path: "/dashboard"
-  auth_required: true
-  body:
-    - component: "header"
-      title: "Dashboard"
-      user_menu: true
-    - component: "stats"
-      items:
-        - title: "Welcome"
-          value: "{{ user.name }}"
-        - title: "Status"
-          value: "Active"
-    - component: "nav"
-      items:
-        - text: "Home"
-          link: "/dashboard"
-        - text: "Profile"
-          link: "/profile"
-        - text: "Settings"
-          link: "/settings"
+model User {
+    id: integer primary_key auto_increment
+    name: string required
+    email: string required unique
+    password: string required
+    created_at: timestamp auto
+    updated_at: timestamp auto
+}
+"""
+    
+    with open(flows_path / "user.flow", 'w') as f:
+        f.write(user_model)
+    
+    # Create sample page
+    dashboard_page = f"""# Dashboard page definition
+
+page {{
+    title: "Dashboard - {project_name}"
+    path: "/dashboard"
+    auth_required: true
+    body: [
+        header {{
+            title: "Dashboard"
+            user_menu: true
+        }}
+        stats {{
+            items: [
+                {{
+                    title: "Welcome"
+                    value: "{{{{ user.name }}}}"
+                }}
+                {{
+                    title: "Status"
+                    value: "Active"
+                }}
+            ]
+        }}
+        nav {{
+            items: [
+                {{
+                    text: "Home"
+                    link: "/dashboard"
+                }}
+                {{
+                    text: "Profile"
+                    link: "/profile"
+                }}
+                {{
+                    text: "Settings"
+                    link: "/settings"
+                }}
+            ]
+        }}
+    ]
+}}
 """
     
     with open(flows_path / "dashboard.flow", 'w') as f:
-        f.write(dashboard_flow)
+        f.write(dashboard_page)
     
-    # auth.flow
-    auth_flow = """# Authentication Configuration
+    # Create sample component
+    button_component = """# Button component definition
 
-authentication:
-  model: "User"
-  login:
-    fields: ["email", "password"]
-    form_component: true
-    redirect_after: "/dashboard"
-  register:
-    fields: ["name", "email", "password"]
-    form_component: true
-    redirect_after: "/dashboard"
-  password_reset:
-    form_component: true
-  social_login:
-    providers: ["google", "facebook"]
+component Button {
+    props: {
+        text: string required
+        onClick: function
+        variant: string default:"primary"
+    }
+    
+    render: {
+        element: "button"
+        attributes: {
+            className: "btn btn-{variant}"
+            onClick: onClick
+        }
+        children: text
+    }
+}
+"""
+    
+    with open(flows_path / "button.flow", 'w') as f:
+        f.write(button_component)
+    
+    # Create sample service
+    auth_service = """# Authentication service definition
 
-model:
-  name: "User"
-  fields:
-    - name: "name"
-      type: "string"
-      required: true
-    - name: "email"
-      type: "string"
-      unique: true
-      required: true
-    - name: "password"
-      type: "password"
-      required: true
-    - name: "email_verified_at"
-      type: "timestamp"
-    - name: "created_at"
-      type: "timestamp"
-      auto: true
-    - name: "updated_at"
-      type: "timestamp"
-      auto: true
+service AuthService {
+    methods: {
+        login: {
+            params: {
+                email: string required
+                password: string required
+            }
+            returns: {
+                user: User
+                token: string
+            }
+        }
+        
+        register: {
+            params: {
+                name: string required
+                email: string required
+                password: string required
+            }
+            returns: {
+                user: User
+                token: string
+            }
+        }
+        
+        logout: {
+            returns: boolean
+        }
+    }
+}
 """
     
     with open(flows_path / "auth.flow", 'w') as f:
-        f.write(auth_flow)
-    
-    # theme.flow
-    theme_flow = f"""# Theme Configuration for {project_name}
-
-theme:
-  colors:
-    primary: "#3B82F6"
-    secondary: "#64748B"
-    success: "#10B981"
-    warning: "#F59E0B"
-    danger: "#EF4444"
-    light: "#F8FAFC"
-    dark: "#0F172A"
-  
-  typography:
-    font_family: "Inter, sans-serif"
-    font_sizes:
-      xs: "0.75rem"
-      sm: "0.875rem"
-      base: "1rem"
-      lg: "1.125rem"
-      xl: "1.25rem"
-      "2xl": "1.5rem"
-      "3xl": "1.875rem"
-  
-  spacing:
-    xs: "0.25rem"
-    sm: "0.5rem"
-    md: "1rem"
-    lg: "1.5rem"
-    xl: "3rem"
-  
-  components:
-    button:
-      border_radius: "0.375rem"
-      padding: "0.5rem 1rem"
-    form:
-      border_radius: "0.375rem"
-      border_color: "#D1D5DB"
-"""
-    
-    with open(flows_path / "theme.flow", 'w') as f:
-        f.write(theme_flow)
+        f.write(auth_service)
     
     # Create a basic test file
-    tests_path = project_path / "src" / "tests"
     basic_test = f"""# Basic API Test for {project_name}
 
-test:
-  name: "Health Check Test"
-  scenario:
-    - step:
-        description: "Check if API is running"
-        request:
-          method: "GET"
-          path: "/api/health"
-        expect:
-          status: 200
-          json:
-            status: "ok"
+test {{
+    name: "Health Check Test"
+    scenario: [
+        {{
+            description: "Check if API is running"
+            request: {{
+                method: "GET"
+                path: "/api/health"
+            }}
+            expect: {{
+                status: 200
+                json: {{
+                    status: "ok"
+                }}
+            }}
+        }}
+    ]
+}}
 """
     
     with open(tests_path / "basic.testflow", 'w') as f:
         f.write(basic_test)
+    
+    # Create welcome page HTML template
+    welcome_html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to FlashFlow</title>
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --dark: #1E293B;
+            --light: #F8FAFC;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, #e2e8f0);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 90%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .section h2 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .step {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .commands {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+        
+        .links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7c3aed;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .highlight {
+            background: #fff9db;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 2rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to FlashFlow!</h1>
+            <p>Your new project has been created successfully</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>🚀 Get Started</h2>
+                <p>You've just created a new FlashFlow project. FlashFlow is a revolutionary full-stack framework that generates complete applications from a single <span class="highlight">.flow</span> file.</p>
+            </div>
+            
+            <div class="steps">
+                <div class="step">
+                    <h3><span class="step-number">1</span> Explore Your Project</h3>
+                    <p>Check out the <span class="highlight">src/flows/</span> directory to see your .flow files that define your application.</p>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">2</span> Install Dependencies</h3>
+                    <p>Run <span class="highlight">flashflow install core</span> to install all required dependencies.</p>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">3</span> Build Your App</h3>
+                    <p>Use <span class="highlight">flashflow build</span> to generate code for all platforms.</p>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">4</span> Start Development Server</h3>
+                    <p>Run <span class="highlight">flashflow serve --all</span> to start the unified development server.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>⚡ Essential Commands</h2>
+                <div class="commands">
+                    # Install core dependencies<br>
+                    flashflow install core<br><br>
+                    
+                    # Generate application code<br>
+                    flashflow build<br><br>
+                    
+                    # Run development server<br>
+                    flashflow serve --all<br><br>
+                    
+                    # Run tests<br>
+                    flashflow test<br><br>
+                    
+                    # Deploy to production<br>
+                    flashflow deploy
+                </div>
+            </div>
+            
+            <div class="links">
+                <a href="http://localhost:8000" class="btn" target="_blank">🌐 View App</a>
+                <a href="http://localhost:8000/admin/cpanel" class="btn btn-secondary" target="_blank">🛠️ Admin Panel</a>
+                <a href="http://localhost:8000/api/docs" class="btn" target="_blank">📚 API Docs</a>
+            </div>
+            
+            <div class="section">
+                <h2>📚 Learn More</h2>
+                <p>Visit our documentation to learn how to build amazing applications with FlashFlow:</p>
+                <ul style="margin-top: 1rem; padding-left: 1.5rem;">
+                    <li><a href="https://docs.flashflow.dev" target="_blank">Official Documentation</a></li>
+                    <li><a href="https://docs.flashflow.dev/getting-started" target="_blank">Getting Started Guide</a></li>
+                    <li><a href="https://docs.flashflow.dev/examples" target="_blank">Example Projects</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>FlashFlow v0.1.0 | Build complete applications with one file</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
+    with open(assets_path / "welcome.html", 'w') as f:
+        f.write(welcome_html)
+    
+    # Create preview page HTML template
+    preview_html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashFlow Preview</title>
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --dark: #1E293B;
+            --light: #F8FAFC;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, #e2e8f0);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .preview-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .preview-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .preview-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .preview-content {
+            padding: 1.5rem;
+        }
+        
+        .preview-content h3 {
+            margin-top: 0;
+            color: var(--dark);
+        }
+        
+        .preview-content ul {
+            padding-left: 1.5rem;
+        }
+        
+        .preview-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            margin: 0.5rem;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7c3aed;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FlashFlow Preview</h1>
+            <p>See how your application looks across different platforms</p>
+        </div>
+        
+        <div class="preview-grid">
+            <div class="preview-card">
+                <div class="preview-header">
+                    <h2>🌐 Web Preview</h2>
+                </div>
+                <div class="preview-content">
+                    <h3>Web Application</h3>
+                    <p>Your responsive web application built with React.</p>
+                    <ul>
+                        <li>Fully responsive design</li>
+                        <li>PWA support</li>
+                        <li>SEO optimized</li>
+                    </ul>
+                    <a href="http://localhost:8000" class="btn" target="_blank">View Web App</a>
+                </div>
+            </div>
+            
+            <div class="preview-card">
+                <div class="preview-header">
+                    <h2>📱 Mobile Preview</h2>
+                </div>
+                <div class="preview-content">
+                    <h3>Mobile Applications</h3>
+                    <p>Native mobile apps for iOS and Android.</p>
+                    <ul>
+                        <li>iOS Native App</li>
+                        <li>Android Native App</li>
+                        <li>Offline support</li>
+                    </ul>
+                    <a href="http://localhost:8000/ios" class="btn" target="_blank">iOS Preview</a>
+                    <a href="http://localhost:8000/android" class="btn" target="_blank">Android Preview</a>
+                </div>
+            </div>
+            
+            <div class="preview-card">
+                <div class="preview-header">
+                    <h2>🖥️ Desktop Preview</h2>
+                </div>
+                <div class="preview-content">
+                    <h3>Desktop Application</h3>
+                    <p>Cross-platform desktop application.</p>
+                    <ul>
+                        <li>Windows support</li>
+                        <li>macOS support</li>
+                        <li>Linux support</li>
+                    </ul>
+                    <a href="http://localhost:8000/desktop" class="btn" target="_blank">Desktop Preview</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="http://localhost:8000" class="btn">🌐 Launch Application</a>
+            <a href="http://localhost:8000/admin/cpanel" class="btn btn-secondary">🛠️ Admin Panel</a>
+            <a href="http://localhost:8000/api/docs" class="btn">📚 API Documentation</a>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
+    with open(assets_path / "preview.html", 'w') as f:
+        f.write(preview_html)
+    
+    # Create __init__.py files to make directories proper Python packages
+    init_files = [
+        models_path / "__init__.py",
+        components_path / "__init__.py",
+        pages_path / "__init__.py",
+        services_path / "__init__.py",
+        utils_path / "__init__.py",
+        config_path / "__init__.py",
+        tests_path / "__init__.py"
+    ]
+    
+    for init_file in init_files:
+        with open(init_file, 'w') as f:
+            f.write("# This file makes the directory a Python package\n")

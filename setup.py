@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-FlashFlow CLI Setup and Entry Point
+Setup script for FlashFlow
 """
 
 from setuptools import setup, find_packages
@@ -13,9 +12,9 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="flashflow",
-    version="0.1.0",
+    version="1.0.0",
     author="FlashFlow Team",
-    author_email="contact@flashflow.dev",
+    author_email="team@flashflow.dev",
     description="A revolutionary full-stack framework that generates complete applications from .flow files",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -23,10 +22,9 @@ setup(
     project_urls={
         "Bug Tracker": "https://github.com/boifagusy/flashflow/issues",
         "Documentation": "https://docs.flashflow.dev",
-        "Source Code": "https://github.com/boifagusy/flashflow",
     },
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -35,7 +33,6 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Code Generators",
         "Topic :: Software Development :: Frameworks",
     ],

@@ -36,6 +36,8 @@ If you're new to FlashFlow, start here:
 - [File Storage](file-storage.md) - Handle file uploads and storage
 - [Real-time Features](realtime.md) - Add live updates and chat
 - [AI Integration](ai.md) - Leverage AI in your applications
+- [AI/ML Capabilities](AI_ML_GUIDE.md) - Advanced machine learning features
+- [UI Flexibility](UI_FLEXIBILITY_GUIDE.md) - Enhanced UI customization capabilities
 
 ## Deployment Options
 

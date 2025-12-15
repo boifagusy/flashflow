@@ -328,7 +328,7 @@ use App\\Http\\Controllers;
         franklinphp_dir = self.backend_path / "franklinphp"
         franklinphp_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create FranklinPHP configuration file
+        # Create FranklinPHP configuration file with GoFastHTTP support
         franklinphp_config = """# FranklinPHP Configuration for Laravel
 [server]
 # Listen on all interfaces
@@ -340,6 +340,9 @@ https = false
 # Path to SSL certificate and key (if HTTPS is enabled)
 # ssl_cert = "/path/to/cert.pem"
 # ssl_key = "/path/to/key.pem"
+
+# Enable GoFastHTTP for better performance
+gofasthttp = true
 
 [worker]
 # Number of worker processes
@@ -361,6 +364,20 @@ public_path = "/app/public"
 # Enable debug mode (set to false in production)
 debug = false
 
+# GoFastHTTP specific settings
+[gofasthttp]
+# Enable GoFastHTTP support
+enabled = true
+
+# GoFastHTTP worker count
+workers = 8
+
+# Connection pool size
+connection_pool_size = 100
+
+# Request timeout (in seconds)
+timeout = 30
+
 [database]
 # Database connection settings
 # These should be overridden by environment variables
@@ -380,7 +397,7 @@ redis_port = 6379
         with open(config_path, 'w') as f:
             f.write(franklinphp_config)
         
-        # Create FranklinPHP Dockerfile
+        # Create FranklinPHP Dockerfile with GoFastHTTP support
         dockerfile_content = """# FranklinPHP Dockerfile for Laravel
 FROM dunglas/franklinphp:latest
 
@@ -396,6 +413,9 @@ RUN install-php-extensions \\
     pdo_mysql \\
     tokenizer \\
     xml
+
+# Install Go for GoFastHTTP support
+RUN apk add --no-cache go
 
 # Set working directory
 WORKDIR /app
@@ -418,11 +438,15 @@ RUN php artisan key:generate
 # Run database migrations
 RUN php artisan migrate --force
 
+# Install GoFastHTTP dependencies
+RUN go mod init franklinphp-gofasthttp
+RUN go get github.com/valyala/fasthttp
+
 # Expose port
 EXPOSE 8000
 
-# Start FranklinPHP server
-CMD ["franklinphp", "server:start", "--listen", ":8000"]
+# Start FranklinPHP server with GoFastHTTP
+CMD ["franklinphp", "server:start", "--listen", ":8000", "--gofasthttp"]
 """
         
         dockerfile_path = self.backend_path / "Dockerfile.franklinphp"
