@@ -5,6 +5,7 @@ FlashFlow 'new' command - Create new FlashFlow project
 import click
 import os
 import json
+import shutil
 from pathlib import Path
 
 @click.command()
@@ -107,7 +108,7 @@ A FlashFlow application built with single-syntax full-stack development.
 
 1. Install dependencies:
    ```bash
-   flashflow install core
+   flashflow install
    ```
 
 2. Build and run the application:
@@ -178,7 +179,7 @@ def display_welcome_message(project_name: str, project_path: Path):
     │                                                                             │
     │    Next steps:                                                              │
     │    1. cd {project_name}                                                     │
-    │    2. flashflow install core                                                │
+    │    2. flashflow install                                                     │
     │    3. flashflow build                                                       │
     │    4. flashflow serve --all                                                 │
     │                                                                             │
@@ -207,7 +208,15 @@ def create_template_files(project_path: Path, template: str, project_name: str):
     # Create sample files in each directory to demonstrate structure
     
     # Create app.flow as the main application definition
-    app_flow = f"""# Main Application Definition for {project_name}
+    template_app_flow = Path(__file__).parent / "templates" / "flows" / "app.flow"
+    if template_app_flow.exists():
+        # Read template and replace placeholders
+        with open(template_app_flow, 'r') as f:
+            app_flow_content = f.read()
+        app_flow = app_flow_content.replace("{{project_name}}", project_name)
+    else:
+        # Fallback to hardcoded template
+        app_flow = f"""# Main Application Definition for {project_name}
 
 # App metadata
 app {{
@@ -216,7 +225,7 @@ app {{
     version: "0.1.0"
 }}
 
-# Theme configuration
+# Theme configuration with platform-adaptive UI support
 theme {{
     colors {{
         primary: "#3B82F6"
@@ -229,17 +238,17 @@ theme {{
     }}
 }}
 
-# Landing page
+# Landing page showcasing platform-adaptive components
 page {{
     title: "Welcome to {project_name}"
     path: "/"
     body: [
         hero {{
             title: "Welcome to {project_name}"
-            subtitle: "Built with FlashFlow - Single-syntax full-stack development"
+            subtitle: "Built with FlashFlow - Single-syntax full-stack development with platform-adaptive UI"
             cta {{
                 text: "Get Started"
-                link: "/dashboard"
+                link: "/welcome"
             }}
         }}
         features {{
@@ -250,7 +259,11 @@ page {{
                 }}
                 {{
                     title: "All Platforms"
-                    description: "Web, iOS, Android, and PWA from one codebase"
+                    description: "Web, iOS, Android, and Desktop from one codebase"
+                }}
+                {{
+                    title: "Platform-Adaptive UI"
+                    description: "Automatic Material 3 on Android/Web and Cupertino on iOS/macOS"
                 }}
                 {{
                     title: "Auto-Generated Backend"
@@ -264,6 +277,387 @@ page {{
     
     with open(flows_path / "app.flow", 'w') as f:
         f.write(app_flow)
+    
+    # Copy welcome.flow template if it exists
+    template_welcome_flow = Path(__file__).parent / "templates" / "flows" / "welcome.flow"
+    if template_welcome_flow.exists():
+        shutil.copy(template_welcome_flow, flows_path / "welcome.flow")
+    else:
+        # Create a default welcome.flow if template doesn't exist
+        welcome_flow = """# FlashFlow Welcome Page
+# This is the default welcome page for new FlashFlow projects
+
+page Welcome:
+  title: "Welcome to FlashFlow"
+  path: "/"
+  
+  body:
+    - headline:
+        text: "Welcome to FlashFlow!"
+        level: 1
+      
+    - text:
+        content: "Your new FlashFlow project has been created successfully. FlashFlow is a revolutionary full-stack framework that generates complete applications from a single .flow file."
+      
+    - headline:
+        text: "🚀 Get Started"
+        level: 2
+      
+    - card:
+        title: "1. Explore Your Project"
+        content: "Check out the src/flows/ directory to see your .flow files that define your application."
+      
+    - card:
+        title: "2. Install Dependencies"
+        content: "Run flashflow install to install all required dependencies."
+      
+    - card:
+        title: "3. Build Your App"
+        content: "Use flashflow build to generate code for all platforms."
+      
+    - card:
+        title: "4. Start Development Server"
+        content: "Run flashflow serve --all to start the unified development server."
+      
+    - headline:
+        text: "✨ Platform-Adaptive UI"
+        level: 2
+      
+    - text:
+        content: "FlashFlow includes platform-adaptive components that automatically render the correct design language based on the operating system:"
+      
+    - card:
+        title: "Material 3"
+        content: "Used for Android, Web, Windows, and Linux platforms"
+      
+    - card:
+        title: "Cupertino"
+        content: "Used for iOS and macOS platforms"
+      
+    - text:
+        content: "This ensures your application looks and feels native on every platform without any extra effort!"
+      
+    - headline:
+        text: "🔗 Platform Previews"
+        level: 2
+      
+    - primary_button:
+        text: "💻 Web Preview"
+        action: navigate
+        link: "/preview/web"
+      
+    - primary_button:
+        text: "🤖 Android Preview"
+        action: navigate
+        link: "/preview/android"
+      
+    - primary_button:
+        text: "🍎 iOS Preview"
+        action: navigate
+        link: "/preview/ios"
+      
+    - primary_button:
+        text: "🖥️ Desktop Preview"
+        action: navigate
+        link: "/preview/desktop"
+      
+    - headline:
+        text: "📘 Preview Mockups"
+        level: 2
+      
+    - text:
+        content: "See visual mockups of how platform-adaptive components will look on different platforms:"
+      
+    - button:
+        text: "Web Preview Mockup"
+        action: navigate
+        link: "/examples/web-preview-mockup.html"
+      
+    - button:
+        text: "Android Preview Mockup"
+        action: navigate
+        link: "/examples/android-preview-mockup.html"
+      
+    - button:
+        text: "iOS Preview Mockup"
+        action: navigate
+        link: "/examples/ios-preview-mockup.html"
+      
+    - button:
+        text: "Desktop Preview Mockup"
+        action: navigate
+        link: "/examples/desktop-preview-mockup.html"
+      
+    - headline:
+        text: "🎓 Platform-Adaptive Demonstration"
+        level: 2
+      
+    - text:
+        content: "See a live demonstration of how platform-adaptive components work in a single .flow file:"
+      
+    - button:
+        text: "Adaptive Components Demo"
+        action: navigate
+        link: "/demo"
+      
+    - button:
+        text: "Platform-Adaptive Mockup"
+        action: navigate
+        link: "/platform-adaptive-mockup"
+      
+    - headline:
+        text: "📚 Learn More"
+        level: 2
+      
+    - text:
+        content: "Visit our documentation to learn how to build amazing applications with FlashFlow:"
+      
+    - button:
+        text: "Official Documentation"
+        action: navigate
+        link: "https://docs.flashflow.dev"
+      
+    - button:
+        text: "Getting Started Guide"
+        action: navigate
+        link: "https://docs.flashflow.dev/getting-started"
+      
+    - button:
+        text: "Platform-Adaptive Components Guide"
+        action: navigate
+        link: "https://docs.flashflow.dev/guides/platform-adaptive-components.html"
+      
+    - button:
+        text: "Example Projects"
+        action: navigate
+        link: "https://docs.flashflow.dev/examples"
+"""
+        with open(flows_path / "welcome.flow", 'w') as f:
+            f.write(welcome_flow)
+    
+    # Copy platform-adaptive-mockup.flow template if it exists
+    template_platform_mockup = Path(__file__).parent / "templates" / "flows" / "platform-adaptive-mockup.flow"
+    if template_platform_mockup.exists():
+        shutil.copy(template_platform_mockup, flows_path / "platform-adaptive-mockup.flow")
+    else:
+        # Create a default platform-adaptive-mockup.flow if template doesn't exist
+        platform_mockup = """# Platform-Adaptive UI Components Mockup
+# This file demonstrates how FlashFlow's platform-adaptive components 
+# automatically adjust their appearance across different platforms
+
+page PlatformAdaptiveMockup:
+  title: "Platform-Adaptive UI Mockup"
+  path: "/platform-adaptive-mockup"
+  
+  body:
+    - headline:
+        text: "Platform-Adaptive UI Components"
+        level: 1
+      
+    - text:
+        content: "This page demonstrates how FlashFlow's platform-adaptive components automatically adjust their appearance based on the target platform. The same .flow file renders differently on web, Android, iOS, and desktop platforms."
+      
+    - headline:
+        text: "How Platform Adaptation Works"
+        level: 2
+      
+    - card:
+        title: "Automatic Detection"
+        content: "FlashFlow automatically detects the target platform and applies the appropriate design system:"
+      
+    - features:
+        items:
+          - title: "Web & Android & Windows & Linux"
+            description: "Uses Material 3 design system with dynamic color, elevation, and rounded corners"
+          - title: "iOS & macOS"
+            description: "Uses Cupertino design system with translucency, focus rings, and SF Pro fonts"
+          - title: "Desktop"
+            description: "Automatically switches between Material 3 (Windows/Linux) and Cupertino (macOS)"
+      
+    - headline:
+        text: "Adaptive Form Components"
+        level: 2
+      
+    - text:
+        content: "Form components automatically adapt their styling and behavior:"
+      
+    - input:
+        label: "Username"
+        value: ""
+        disabled: false
+      
+    - input:
+        label: "Email Address"
+        value: ""
+        disabled: false
+      
+    - input:
+        label: "Password"
+        value: ""
+        disabled: false
+      
+    - primary_button:
+        text: "Sign Up"
+        disabled: false
+        action: alert
+        message: "This is a platform-adaptive primary button! Notice how it looks different on different platforms."
+      
+    - headline:
+        text: "Adaptive Navigation Components"
+        level: 2
+      
+    - text:
+        content: "Navigation components adapt to platform conventions:"
+      
+    - button:
+        text: "Standard Button"
+        action: alert
+        message: "This is a platform-adaptive standard button! Notice how it looks different on different platforms."
+      
+    - headline:
+        text: "Adaptive Cards & Content"
+        level: 2
+      
+    - text:
+        content: "Content containers and cards automatically adapt their styling:"
+      
+    - card:
+        title: "Feature Card"
+        content: "This card automatically adapts its styling based on the platform. On Material 3 platforms, it has elevation and rounded corners. On Cupertino platforms, it has a more subtle appearance with appropriate borders."
+      
+    - features:
+        items:
+          - title: "Cross-Platform Compatibility"
+            description: "Automatically adapts to Material 3 on Android/Web/Windows/Linux and Cupertino on iOS/macOS"
+          - title: "Consistent Experience"
+            description: "Maintains the same functionality while providing native look and feel"
+          - title: "Easy Implementation"
+            description: "Simply use the new component types in your .flow files"
+      
+    - headline:
+        text: "Platform-Specific Examples"
+        level: 2
+      
+    - text:
+        content: "See how the same components render differently on various platforms:"
+      
+    - card:
+        title: "Web Preview (Material 3)"
+        content: "On web platforms, components use Material 3 design with dynamic color schemes, elevation, and meaningful transitions."
+      
+    - card:
+        title: "Android Preview (Material You)"
+        content: "On Android, components use Material You with personalized color schemes that adapt to your device wallpaper."
+      
+    - card:
+        title: "iOS Preview (Cupertino)"
+        content: "On iOS, components use Cupertino design with translucency effects, focus rings, and SF Pro fonts."
+      
+    - card:
+        title: "Desktop Preview (Adaptive)"
+        content: "On desktop, components automatically switch between Material 3 (Windows/Linux) and Cupertino (macOS) based on the operating system."
+      
+    - headline:
+        text: "Try It Yourself"
+        level: 2
+      
+    - text:
+        content: "To see these components in action, run 'flashflow serve --all' and visit the platform preview links:"
+      
+    - button:
+        text: "💻 Web Preview"
+        action: navigate
+        link: "/preview/web"
+      
+    - button:
+        text: "🤖 Android Preview"
+        action: navigate
+        link: "/preview/android"
+      
+    - button:
+        text: "🍎 iOS Preview"
+        action: navigate
+        link: "/preview/ios"
+      
+    - button:
+        text: "🖥️ Desktop Preview"
+        action: navigate
+        link: "/preview/desktop"
+      
+    - text:
+        content: "Notice how the same .flow file renders differently on each platform while maintaining the same functionality and structure."
+"""
+        with open(flows_path / "platform-adaptive-mockup.flow", 'w') as f:
+            f.write(platform_mockup)
+    
+    # Create a sample page that demonstrates platform-adaptive components
+    sample_adaptive_page = """# Sample Page Demonstrating Platform-Adaptive Components
+
+page AdaptiveDemo:
+  title: "Platform-Adaptive Demo"
+  path: "/demo"
+  
+  body:
+    - headline:
+        text: "Platform-Adaptive Components Demo"
+        level: 1
+      
+    - text:
+        content: "This page demonstrates how FlashFlow's platform-adaptive components automatically adjust their appearance based on the target platform."
+      
+    - headline:
+        text: "Adaptive Form Elements"
+        level: 2
+      
+    - input:
+        label: "Username"
+        value: ""
+        disabled: false
+      
+    - input:
+        label: "Email Address"
+        value: ""
+        disabled: false
+      
+    - input:
+        label: "Password"
+        value: ""
+        disabled: false
+      
+    - primary_button:
+        text: "Sign Up"
+        disabled: false
+        action: navigate
+        link: "/dashboard"
+      
+    - headline:
+        text: "Standard Components Still Work"
+        level: 2
+      
+    - text:
+        content: "You can still use standard components alongside the new adaptive ones:"
+      
+    - button:
+        text: "Standard Button"
+        action: navigate
+        link: "/"
+      
+    - card:
+        title: "Feature Card"
+        content: "This is a standard card component that works across all platforms."
+      
+    - features:
+        items:
+          - title: "Cross-Platform Compatibility"
+            description: "Automatically adapts to Material 3 on Android/Web and Cupertino on iOS/macOS"
+          - title: "Consistent Experience"
+            description: "Maintains the same functionality while providing native look and feel"
+          - title: "Easy Implementation"
+            description: "Simply use the new component types in your .flow files"
+"""
+    
+    with open(flows_path / "adaptive-demo.flow", 'w') as f:
+        f.write(sample_adaptive_page)
     
     # Create sample model
     user_model = """# User model definition
@@ -614,7 +1008,7 @@ test {{
                 
                 <div class="step">
                     <h3><span class="step-number">2</span> Install Dependencies</h3>
-                    <p>Run <span class="highlight">flashflow install core</span> to install all required dependencies.</p>
+                    <p>Run <span class="highlight">flashflow install</span> to install all required dependencies.</p>
                 </div>
                 
                 <div class="step">
@@ -629,10 +1023,20 @@ test {{
             </div>
             
             <div class="section">
+                <h2>✨ Platform-Adaptive UI</h2>
+                <p>FlashFlow now includes platform-adaptive components that automatically render the correct design language based on the operating system:</p>
+                <ul style="margin-top: 1rem; padding-left: 1.5rem;">
+                    <li><strong>Material 3</strong> for Android, Web, Windows, and Linux</li>
+                    <li><strong>Cupertino</strong> for iOS and macOS</li>
+                </ul>
+                <p style="margin-top: 1rem;">This ensures your application looks and feels native on every platform without any extra effort!</p>
+            </div>
+            
+            <div class="section">
                 <h2>⚡ Essential Commands</h2>
                 <div class="commands">
-                    # Install core dependencies<br>
-                    flashflow install core<br><br>
+                    # Install dependencies<br>
+                    flashflow install<br><br>
                     
                     # Generate application code<br>
                     flashflow build<br><br>
@@ -650,8 +1054,10 @@ test {{
             
             <div class="links">
                 <a href="http://localhost:8000" class="btn" target="_blank">🌐 View App</a>
-                <a href="http://localhost:8000/admin/cpanel" class="btn btn-secondary" target="_blank">🛠️ Admin Panel</a>
-                <a href="http://localhost:8000/api/docs" class="btn" target="_blank">📚 API Docs</a>
+                <a href="http://localhost:8000/preview/web" class="btn" target="_blank">💻 Web Preview</a>
+                <a href="http://localhost:8000/preview/android" class="btn" target="_blank">🤖 Android Preview</a>
+                <a href="http://localhost:8000/preview/ios" class="btn" target="_blank">🍎 iOS Preview</a>
+                <a href="http://localhost:8000/preview/desktop" class="btn" target="_blank">🖥️ Desktop Preview</a>
             </div>
             
             <div class="section">
@@ -660,6 +1066,7 @@ test {{
                 <ul style="margin-top: 1rem; padding-left: 1.5rem;">
                     <li><a href="https://docs.flashflow.dev" target="_blank">Official Documentation</a></li>
                     <li><a href="https://docs.flashflow.dev/getting-started" target="_blank">Getting Started Guide</a></li>
+                    <li><a href="https://docs.flashflow.dev/guides/platform-adaptive-components.html" target="_blank">Platform-Adaptive Components Guide</a></li>
                     <li><a href="https://docs.flashflow.dev/examples" target="_blank">Example Projects</a></li>
                 </ul>
             </div>
@@ -814,7 +1221,7 @@ test {{
     <div class="container">
         <div class="header">
             <h1>FlashFlow Preview</h1>
-            <p>See how your application looks across different platforms</p>
+            <p>See how your application looks across different platforms with automatic platform-adaptive UI</p>
         </div>
         
         <div class="preview-grid">
@@ -824,13 +1231,14 @@ test {{
                 </div>
                 <div class="preview-content">
                     <h3>Web Application</h3>
-                    <p>Your responsive web application built with React.</p>
+                    <p>Your responsive web application with Material 3 design system.</p>
                     <ul>
                         <li>Fully responsive design</li>
-                        <li>PWA support</li>
+                        <li>Material 3 design system</li>
                         <li>SEO optimized</li>
+                        <li>PWA support</li>
                     </ul>
-                    <a href="http://localhost:8000" class="btn" target="_blank">View Web App</a>
+                    <a href="http://localhost:8000/preview/web" class="btn" target="_blank">View Web App</a>
                 </div>
             </div>
             
@@ -840,14 +1248,15 @@ test {{
                 </div>
                 <div class="preview-content">
                     <h3>Mobile Applications</h3>
-                    <p>Native mobile apps for iOS and Android.</p>
+                    <p>Native mobile apps with platform-adaptive UI:</p>
                     <ul>
-                        <li>iOS Native App</li>
-                        <li>Android Native App</li>
+                        <li>Material 3 on Android</li>
+                        <li>Cupertino on iOS</li>
                         <li>Offline support</li>
+                        <li>Push notifications</li>
                     </ul>
-                    <a href="http://localhost:8000/ios" class="btn" target="_blank">iOS Preview</a>
-                    <a href="http://localhost:8000/android" class="btn" target="_blank">Android Preview</a>
+                    <a href="http://localhost:8000/preview/android" class="btn" target="_blank">Android Preview</a>
+                    <a href="http://localhost:8000/preview/ios" class="btn" target="_blank">iOS Preview</a>
                 </div>
             </div>
             
@@ -857,13 +1266,14 @@ test {{
                 </div>
                 <div class="preview-content">
                     <h3>Desktop Application</h3>
-                    <p>Cross-platform desktop application.</p>
+                    <p>Cross-platform desktop application with platform-adaptive UI:</p>
                     <ul>
-                        <li>Windows support</li>
-                        <li>macOS support</li>
-                        <li>Linux support</li>
+                        <li>Material 3 on Windows/Linux</li>
+                        <li>Cupertino on macOS</li>
+                        <li>Native window controls</li>
+                        <li>System tray integration</li>
                     </ul>
-                    <a href="http://localhost:8000/desktop" class="btn" target="_blank">Desktop Preview</a>
+                    <a href="http://localhost:8000/preview/desktop" class="btn" target="_blank">Desktop Preview</a>
                 </div>
             </div>
         </div>

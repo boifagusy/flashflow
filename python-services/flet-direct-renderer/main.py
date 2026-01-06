@@ -17,6 +17,8 @@ import requests
 from urllib.parse import urljoin
 import numpy as np
 
+# Import platform-adaptive components
+from components import PlatformAdaptiveComponents, AdaptiveThemeManager, create_adaptive_headline, create_adaptive_input, create_adaptive_button
 # FlashCore integration
 try:
     import flashcore
@@ -498,53 +500,183 @@ class FlashFlowEngine:
         
         component_type = component_data.get('component', '').lower()
         
+        # Store page reference for adaptive components
+        page_ref = getattr(self, '_current_page', None)
+        
         if component_type == 'header':
-            return ft.Text(
-                component_data.get('content', ''),
-                size=24,
-                weight=ft.FontWeight.BOLD
-            )
+            if page_ref:
+                # Use adaptive headline component
+                return create_adaptive_headline(page_ref, component_data.get('content', ''), level=1)
+            else:
+                return ft.Text(
+                    component_data.get('content', ''),
+                    size=24,
+                    weight=ft.FontWeight.BOLD
+                )
         elif component_type == 'text':
-            return ft.Text(
-                component_data.get('content', ''),
-                size=16
-            )
+            if page_ref:
+                # Use adaptive headline component for text as well
+                return create_adaptive_headline(page_ref, component_data.get('content', ''), level=4)
+            else:
+                return ft.Text(
+                    component_data.get('content', ''),
+                    size=16
+                )
+        elif component_type == 'headline':
+            # New adaptive headline component
+            level = component_data.get('level', 1)
+            text = component_data.get('text', '')
+            if page_ref:
+                return create_adaptive_headline(page_ref, text, level=level)
+            else:
+                # Fallback to standard text
+                sizes = {1: 32, 2: 28, 3: 24, 4: 20, 5: 18, 6: 16}
+                return ft.Text(
+                    text,
+                    size=sizes.get(level, 24),
+                    weight=ft.FontWeight.BOLD
+                )
+        elif component_type == 'input':
+            # New adaptive input component
+            label = component_data.get('label', '')
+            value = component_data.get('value', '')
+            disabled = component_data.get('disabled', False)
+            if page_ref:
+                return create_adaptive_input(page_ref, label, value, disabled)
+            else:
+                # Fallback to standard TextField
+                return ft.TextField(
+                    label=label,
+                    value=value,
+                    disabled=disabled
+                )
         elif component_type == 'button':
             # Handle API actions for buttons
             action = component_data.get('action')
-            if action:
-                def on_click(e):
-                    # Handle different types of actions
-                    if action == 'api_call':
-                        endpoint = component_data.get('endpoint')
-                        method = component_data.get('method', 'GET')
-                        data = component_data.get('data', {})
-                        if endpoint:
-                            result = self._make_api_request(method, endpoint, data)
-                            print(f"API call result: {result}")
-                    elif action == 'set_state':
-                        # Special action to set application state
-                        state_changes = component_data.get('state_changes', {})
-                        for key, value in state_changes.items():
-                            self.set_state(key, value)
-                    elif action == 'navigate':
-                        # Navigation action
-                        link = component_data.get('link')
-                        if link:
-                            # In a real implementation, this would navigate to the link
-                            print(f"Navigating to: {link}")
-                    else:
-                        print(f"Button clicked: {component_data.get('text', 'Button')} - Action: {action}")
-                
-                return ft.ElevatedButton(
-                    component_data.get('text', 'Button'),
-                    on_click=on_click
-                )
+            text = component_data.get('text', 'Button')
+            disabled = component_data.get('disabled', False)
+            
+            if page_ref:
+                # Use adaptive button component
+                if action:
+                    def on_click(e):
+                        # Handle different types of actions
+                        if action == 'api_call':
+                            endpoint = component_data.get('endpoint')
+                            method = component_data.get('method', 'GET')
+                            data = component_data.get('data', {})
+                            if endpoint:
+                                result = self._make_api_request(method, endpoint, data)
+                                print(f"API call result: {result}")
+                        elif action == 'set_state':
+                            # Special action to set application state
+                            state_changes = component_data.get('state_changes', {})
+                            for key, value in state_changes.items():
+                                self.set_state(key, value)
+                        elif action == 'navigate':
+                            # Navigation action
+                            link = component_data.get('link')
+                            if link:
+                                # In a real implementation, this would navigate to the link
+                                print(f"Navigating to: {link}")
+                        else:
+                            print(f"Button clicked: {text} - Action: {action}")
+                    
+                    return create_adaptive_button(page_ref, text, disabled, on_click)
+                else:
+                    return create_adaptive_button(page_ref, text, disabled, lambda e: print(f"Button clicked: {text}"))
             else:
-                return ft.ElevatedButton(
-                    component_data.get('text', 'Button'),
-                    on_click=lambda e: print(f"Button clicked: {component_data.get('text', 'Button')}")
-                )
+                # Fallback to standard ElevatedButton
+                if action:
+                    def on_click(e):
+                        # Handle different types of actions
+                        if action == 'api_call':
+                            endpoint = component_data.get('endpoint')
+                            method = component_data.get('method', 'GET')
+                            data = component_data.get('data', {})
+                            if endpoint:
+                                result = self._make_api_request(method, endpoint, data)
+                                print(f"API call result: {result}")
+                        elif action == 'set_state':
+                            # Special action to set application state
+                            state_changes = component_data.get('state_changes', {})
+                            for key, value in state_changes.items():
+                                self.set_state(key, value)
+                        elif action == 'navigate':
+                            # Navigation action
+                            link = component_data.get('link')
+                            if link:
+                                # In a real implementation, this would navigate to the link
+                                print(f"Navigating to: {link}")
+                        else:
+                            print(f"Button clicked: {text} - Action: {action}")
+                    
+                    return ft.ElevatedButton(text, on_click=on_click, disabled=disabled)
+                else:
+                    return ft.ElevatedButton(text, on_click=lambda e: print(f"Button clicked: {text}"), disabled=disabled)
+        elif component_type == 'primary_button':
+            # New adaptive primary button component
+            text = component_data.get('text', 'Button')
+            disabled = component_data.get('disabled', False)
+            action = component_data.get('action')
+            
+            if page_ref:
+                if action:
+                    def on_click(e):
+                        # Handle different types of actions
+                        if action == 'api_call':
+                            endpoint = component_data.get('endpoint')
+                            method = component_data.get('method', 'GET')
+                            data = component_data.get('data', {})
+                            if endpoint:
+                                result = self._make_api_request(method, endpoint, data)
+                                print(f"API call result: {result}")
+                        elif action == 'set_state':
+                            # Special action to set application state
+                            state_changes = component_data.get('state_changes', {})
+                            for key, value in state_changes.items():
+                                self.set_state(key, value)
+                        elif action == 'navigate':
+                            # Navigation action
+                            link = component_data.get('link')
+                            if link:
+                                # In a real implementation, this would navigate to the link
+                                print(f"Navigating to: {link}")
+                        else:
+                            print(f"Button clicked: {text} - Action: {action}")
+                    
+                    return create_adaptive_button(page_ref, text, disabled, on_click)
+                else:
+                    return create_adaptive_button(page_ref, text, disabled, lambda e: print(f"Button clicked: {text}"))
+            else:
+                # Fallback to standard ElevatedButton
+                if action:
+                    def on_click(e):
+                        # Handle different types of actions
+                        if action == 'api_call':
+                            endpoint = component_data.get('endpoint')
+                            method = component_data.get('method', 'GET')
+                            data = component_data.get('data', {})
+                            if endpoint:
+                                result = self._make_api_request(method, endpoint, data)
+                                print(f"API call result: {result}")
+                        elif action == 'set_state':
+                            # Special action to set application state
+                            state_changes = component_data.get('state_changes', {})
+                            for key, value in state_changes.items():
+                                self.set_state(key, value)
+                        elif action == 'navigate':
+                            # Navigation action
+                            link = component_data.get('link')
+                            if link:
+                                # In a real implementation, this would navigate to the link
+                                print(f"Navigating to: {link}")
+                        else:
+                            print(f"Button clicked: {text} - Action: {action}")
+                    
+                    return ft.ElevatedButton(text, on_click=on_click, disabled=disabled)
+                else:
+                    return ft.ElevatedButton(text, on_click=lambda e: print(f"Button clicked: {text}"), disabled=disabled)
         elif component_type == 'hero':
             # Hero component with title and subtitle
             title = component_data.get('title', '')
@@ -553,25 +685,36 @@ class FlashFlowEngine:
             
             hero_content = []
             if title:
-                hero_content.append(ft.Text(title, size=32, weight=ft.FontWeight.BOLD))
+                if page_ref:
+                    hero_content.append(create_adaptive_headline(page_ref, title, level=1))
+                else:
+                    hero_content.append(ft.Text(title, size=32, weight=ft.FontWeight.BOLD))
             if subtitle:
-                hero_content.append(ft.Text(subtitle, size=18, color=ft.Colors.GREY))
+                if page_ref:
+                    hero_content.append(create_adaptive_headline(page_ref, subtitle, level=4))
+                else:
+                    hero_content.append(ft.Text(subtitle, size=18, color=ft.colors.GREY))
             
             # Add CTA button if present
             if cta and isinstance(cta, dict):
                 cta_text = cta.get('text', 'Get Started')
                 cta_link = cta.get('link', '#')
-                hero_content.append(
-                    ft.ElevatedButton(
-                        cta_text,
-                        on_click=lambda e: print(f"CTA clicked: {cta_text} - Link: {cta_link}")
+                if page_ref:
+                    hero_content.append(
+                        create_adaptive_button(page_ref, cta_text, False, lambda e: print(f"CTA clicked: {cta_text} - Link: {cta_link}"))
                     )
-                )
+                else:
+                    hero_content.append(
+                        ft.ElevatedButton(
+                            cta_text,
+                            on_click=lambda e: print(f"CTA clicked: {cta_text} - Link: {cta_link}")
+                        )
+                    )
                 
             return ft.Container(
                 content=ft.Column(hero_content, spacing=20, alignment=ft.MainAxisAlignment.CENTER),
                 padding=40,
-                bgcolor=ft.Colors.BLUE_50,
+                bgcolor=ft.colors.BLUE_50,
                 border_radius=10,
                 alignment=ft.alignment.center
             )
@@ -581,9 +724,15 @@ class FlashFlowEngine:
             
             card_content = []
             if title:
-                card_content.append(ft.Text(title, size=18, weight=ft.FontWeight.BOLD))
+                if page_ref:
+                    card_content.append(create_adaptive_headline(page_ref, title, level=3))
+                else:
+                    card_content.append(ft.Text(title, size=18, weight=ft.FontWeight.BOLD))
             if content:
-                card_content.append(ft.Text(content, size=14))
+                if page_ref:
+                    card_content.append(create_adaptive_headline(page_ref, content, level=5))
+                else:
+                    card_content.append(ft.Text(content, size=14))
                 
             return ft.Card(
                 content=ft.Container(
@@ -603,15 +752,21 @@ class FlashFlowEngine:
                     
                     feature_column = []
                     if title:
-                        feature_column.append(ft.Text(title, size=20, weight=ft.FontWeight.BOLD))
+                        if page_ref:
+                            feature_column.append(create_adaptive_headline(page_ref, title, level=3))
+                        else:
+                            feature_column.append(ft.Text(title, size=20, weight=ft.FontWeight.BOLD))
                     if description:
-                        feature_column.append(ft.Text(description, size=14, color=ft.Colors.GREY))
+                        if page_ref:
+                            feature_column.append(create_adaptive_headline(page_ref, description, level=5))
+                        else:
+                            feature_column.append(ft.Text(description, size=14, color=ft.colors.GREY))
                     
                     features_content.append(
                         ft.Container(
                             content=ft.Column(feature_column, spacing=5),
                             padding=20,
-                            border=ft.border.all(1, ft.Colors.BLUE_100),
+                            border=ft.border.all(1, ft.colors.BLUE_100),
                             border_radius=8
                         )
                     )
@@ -622,54 +777,83 @@ class FlashFlowEngine:
             title = component_data.get('title', 'FlashCore Demo')
             demo_type = component_data.get('demo_type', 'vector_search')
             
-            demo_content = [
-                ft.Text(title, size=24, weight=ft.FontWeight.BOLD),
-                ft.Divider()
-            ]
+            demo_content = []
+            if page_ref:
+                demo_content.append(create_adaptive_headline(page_ref, title, level=2))
+                demo_content.append(ft.Divider())
+            else:
+                demo_content.extend([
+                    ft.Text(title, size=24, weight=ft.FontWeight.BOLD),
+                    ft.Divider()
+                ])
             
             if demo_type == 'vector_search':
-                demo_content.extend([
-                    ft.Text("Vector Search Demo", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("Click the button below to perform a vector search using FlashCore:"),
-                    ft.ElevatedButton(
-                        "Run Vector Search",
-                        on_click=lambda e: self._run_vector_search_demo()
-                    ),
-                    ft.Text("Results will appear in the console", size=12, color=ft.Colors.GREY)
-                ])
+                if page_ref:
+                    demo_content.extend([
+                        create_adaptive_headline(page_ref, "Vector Search Demo", level=3),
+                        create_adaptive_headline(page_ref, "Click the button below to perform a vector search using FlashCore:", level=5),
+                        create_adaptive_button(page_ref, "Run Vector Search", False, lambda e: self._run_vector_search_demo()),
+                        create_adaptive_headline(page_ref, "Results will appear in the console", level=6)
+                    ])
+                else:
+                    demo_content.extend([
+                        ft.Text("Vector Search Demo", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("Click the button below to perform a vector search using FlashCore:"),
+                        ft.ElevatedButton(
+                            "Run Vector Search",
+                            on_click=lambda e: self._run_vector_search_demo()
+                        ),
+                        ft.Text("Results will appear in the console", size=12, color=ft.colors.GREY)
+                    ])
             elif demo_type == 'inference':
-                demo_content.extend([
-                    ft.Text("ML Inference Demo", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("Click the button below to run ML inference using FlashCore:"),
-                    ft.ElevatedButton(
-                        "Run Inference",
-                        on_click=lambda e: self._run_inference_demo()
-                    ),
-                    ft.Text("Results will appear in the console", size=12, color=ft.Colors.GREY)
-                ])
+                if page_ref:
+                    demo_content.extend([
+                        create_adaptive_headline(page_ref, "ML Inference Demo", level=3),
+                        create_adaptive_headline(page_ref, "Click the button below to run ML inference using FlashCore:", level=5),
+                        create_adaptive_button(page_ref, "Run Inference", False, lambda e: self._run_inference_demo()),
+                        create_adaptive_headline(page_ref, "Results will appear in the console", level=6)
+                    ])
+                else:
+                    demo_content.extend([
+                        ft.Text("ML Inference Demo", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("Click the button below to run ML inference using FlashCore:"),
+                        ft.ElevatedButton(
+                            "Run Inference",
+                            on_click=lambda e: self._run_inference_demo()
+                        ),
+                        ft.Text("Results will appear in the console", size=12, color=ft.colors.GREY)
+                    ])
             elif demo_type == 'encryption':
-                demo_content.extend([
-                    ft.Text("Encryption Demo", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("Click the button below to encrypt/decrypt data using FlashCore:"),
-                    ft.ElevatedButton(
-                        "Run Encryption",
-                        on_click=lambda e: self._run_encryption_demo()
-                    ),
-                    ft.Text("Results will appear in the console", size=12, color=ft.Colors.GREY)
-                ])
+                if page_ref:
+                    demo_content.extend([
+                        create_adaptive_headline(page_ref, "Encryption Demo", level=3),
+                        create_adaptive_headline(page_ref, "Click the button below to encrypt/decrypt data using FlashCore:", level=5),
+                        create_adaptive_button(page_ref, "Run Encryption", False, lambda e: self._run_encryption_demo()),
+                        create_adaptive_headline(page_ref, "Results will appear in the console", level=6)
+                    ])
+                else:
+                    demo_content.extend([
+                        ft.Text("Encryption Demo", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("Click the button below to encrypt/decrypt data using FlashCore:"),
+                        ft.ElevatedButton(
+                            "Run Encryption",
+                            on_click=lambda e: self._run_encryption_demo()
+                        ),
+                        ft.Text("Results will appear in the console", size=12, color=ft.colors.GREY)
+                    ])
             
             return ft.Container(
                 content=ft.Column(demo_content, spacing=15),
                 padding=20,
-                border=ft.border.all(2, ft.Colors.BLUE_300),
+                border=ft.border.all(2, ft.colors.BLUE_300),
                 border_radius=10,
-                bgcolor=ft.Colors.BLUE_50
+                bgcolor=ft.colors.BLUE_50
             )
         else:
             # Default unknown component
             return ft.Container(
                 content=ft.Text(f"Unknown component: {component_type}"),
-                bgcolor=ft.Colors.YELLOW_100,
+                bgcolor=ft.colors.YELLOW_100,
                 padding=10,
                 border_radius=5
             )
@@ -699,7 +883,7 @@ class FlashFlowEngine:
                     ft.Text("🔧 FlashFlow Direct Renderer", size=20, weight=ft.FontWeight.BOLD),
                     ft.Text("This page is rendered directly from .flow files without code generation!", size=14),
                 ]),
-                bgcolor=ft.Colors.BLUE_50,
+                bgcolor=ft.colors.BLUE_50,
                 padding=20,
                 border_radius=10,
                 margin=ft.margin.only(top=30)
@@ -725,6 +909,18 @@ class FlashFlowEngine:
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         page.padding = 20
         page.theme_mode = ft.ThemeMode.LIGHT
+        
+        # Apply platform-adaptive theme with 60-30-10 color balance
+        # Using blue-based color scheme as an example
+        theme = AdaptiveThemeManager.create_theme(
+            dominant_60="#1976D2",    # Blue (60%)
+            secondary_30="#424242",   # Grey (30%)
+            accent_10="#FF4081"       # Pink (10%)
+        )
+        page.theme = theme
+        
+        # Store page reference for adaptive components
+        self._current_page = page
         
         # Detect current platform
         self.current_platform = self._detect_platform(page)
@@ -762,7 +958,7 @@ class FlashFlowEngine:
             
             # Add navigation info
             controls.append(
-                ft.Text(f"Route: {route} | Platform: {self.current_platform}", size=12, color=ft.Colors.GREY)
+                ft.Text(f"Route: {route} | Platform: {self.current_platform}", size=12, color=ft.colors.GREY)
             )
             
             page.controls.clear()
@@ -772,7 +968,7 @@ class FlashFlowEngine:
             page.controls.clear()
             page.add(
                 ft.Column([
-                    ft.Text("Page Not Found", size=32, color=ft.Colors.RED),
+                    ft.Text("Page Not Found", size=32, color=ft.colors.RED),
                     ft.Text(f"No .flow file found for route: {route}", size=16),
                     ft.Text("Available routes:", size=18, weight=ft.FontWeight.BOLD),
                     *[ft.Text(f"- {route}") for route in self.page_registry.keys()]
