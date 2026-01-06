@@ -1,5 +1,0 @@
-model:
-  name: User
-  fields:
-    name: string required
-    email: string required unique
